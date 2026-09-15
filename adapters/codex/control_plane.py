@@ -98,6 +98,7 @@ SNAPSHOT_RUNTIME_RELATIVE_PATH = (
 
 
 class CodexTurnRoute(StrEnum):
+    """Represent the codex turn route contract, state, or service boundary."""
     INACTIVE = "inactive"
     MISSING_SKILL_INVOCATION = "missing_skill_invocation"
     ARCHITECTURE_WORKFLOW = "architecture_workflow"
@@ -105,6 +106,7 @@ class CodexTurnRoute(StrEnum):
 
 @dataclass(frozen=True)
 class CodexTurnContext:
+    """Represent the codex turn context contract, state, or service boundary."""
     active: bool
     route: CodexTurnRoute
     reference_paths: tuple[str, ...] = ()
@@ -162,6 +164,7 @@ def with_reference_hints(
     context: CodexTurnContext,
     prompt: str,
 ) -> CodexTurnContext:
+    """Provide the with reference hints operation used by the architecture workflow."""
     paths = _explicit_reference_paths(prompt)
     if not paths:
         return context
@@ -321,6 +324,7 @@ def developer_context(
 
 
 def repository_snapshot_command(plugin_root: Path) -> str:
+    """Provide the repository snapshot command operation used by the architecture workflow."""
     executable = plugin_root.resolve(strict=False) / SNAPSHOT_RUNTIME_RELATIVE_PATH
     return f'& "{executable}" --repository-snapshot --root .'
 
@@ -441,6 +445,7 @@ def tool_denial_reason(
     workspace: Path | None = None,
     plugin_root: Path | None = None,
 ) -> str | None:
+    """Provide the tool denial reason operation used by the architecture workflow."""
     if not context.active:
         return None
     local_tool_name = _normalized_local_tool_name(tool_name_value)
@@ -745,6 +750,7 @@ def final_response_violations(
     context: CodexTurnContext,
     message: str,
 ) -> list[str]:
+    """Provide the final response violations operation used by the architecture workflow."""
     if context.route == CodexTurnRoute.ARCHITECTURE_WORKFLOW:
         violations = _architecture_workflow_violations(message)
         missing_links = [

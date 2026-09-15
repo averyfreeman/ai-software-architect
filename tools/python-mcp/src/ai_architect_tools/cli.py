@@ -33,6 +33,7 @@ def _read(path: str) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build parser from validated inputs."""
     parser = argparse.ArgumentParser(prog="ai-architect-tools")
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -58,6 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     args = build_parser().parse_args()
     if args.command == "validate-contract":
         _emit(

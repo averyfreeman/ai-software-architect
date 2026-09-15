@@ -21,6 +21,7 @@ LOCAL_PACKAGES = {canonicalize_name(name) for name in ROOT_PACKAGES}
 
 
 def runtime_distributions() -> list[metadata.Distribution]:
+    """Provide the runtime distributions operation used by the architecture workflow."""
     available = {
         canonicalize_name(distribution.metadata["Name"]): distribution
         for distribution in metadata.distributions()
@@ -52,6 +53,7 @@ def runtime_distributions() -> list[metadata.Distribution]:
 
 
 def license_name(distribution: metadata.Distribution) -> str:
+    """Provide the license name operation used by the architecture workflow."""
     expression = distribution.metadata.get("License-Expression")
     if expression:
         return expression
@@ -66,6 +68,7 @@ def license_name(distribution: metadata.Distribution) -> str:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     lines = [
         "<!--",
         "SPDX-FileCopyrightText: 2026 Leonardo Muffato "

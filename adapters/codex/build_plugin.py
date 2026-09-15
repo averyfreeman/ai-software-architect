@@ -400,6 +400,7 @@ def _build_runtime() -> Path:
 
 
 def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
+    """Build assemble from validated inputs."""
     output_resolved = OUTPUT.resolve()
     expected_parent = OUTPUT_PARENT.resolve()
     if output_resolved.parent != expected_parent or output_resolved.name != "ai-software-architect":
@@ -489,6 +490,7 @@ def assemble(runtime: Path, *, plugin_version: str | None = None) -> Path:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", type=Path)
     parser.add_argument("--build-runtime", action="store_true")

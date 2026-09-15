@@ -80,6 +80,7 @@ def load_safe_yaml(content: str) -> Any:
 def validate_architecture_contract(
     request: ContractValidationInput,
 ) -> ContractValidationResult:
+    """Validate architecture contract against repository invariants."""
     try:
         raw = load_safe_yaml(request.yaml_content)
         if not isinstance(raw, dict):
@@ -116,6 +117,7 @@ _SAFE_MARKERS = ("example", "placeholder", "changeme", "not-a-real", "${", "{{",
 
 
 def scan_generated_artifact(request: ArtifactSecretScanInput) -> ArtifactSecretScanResult:
+    """Provide the scan generated artifact operation used by the architecture workflow."""
     findings: list[SecretFinding] = []
     for line_number, line in enumerate(request.content.splitlines(), start=1):
         if _PRIVATE_KEY.search(line):

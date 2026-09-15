@@ -31,6 +31,7 @@ def _frontmatter(content: str) -> str:
 def list_architecture_decisions(
     reader: WorkspaceReader, request: DecisionListInput
 ) -> DecisionListResult:
+    """Provide the list architecture decisions operation used by the architecture workflow."""
     decisions = []
     invalid_files: list[str] = []
     examined = 0
@@ -69,4 +70,3 @@ def list_architecture_decisions(
         files_skipped=skipped,
         truncated=truncated,
     )
-

@@ -20,41 +20,48 @@ PERFORMANCE_SCHEMA_VERSION: PerformanceSchemaVersion = "1.4.0"
 
 
 class ExecutionMode(StrEnum):
+    """Represent the execution mode contract, state, or service boundary."""
     SEQUENTIAL_CODEX_CLI = "sequential-codex-cli"
     PARALLEL_CODEX_TASKS = "parallel-codex-tasks"
     INTERACTIVE_CODEX_TASK = "interactive-codex-task"
 
 
 class SpeedMode(StrEnum):
+    """Represent the speed mode contract, state, or service boundary."""
     STANDARD = "standard"
     FAST = "fast"
     UNKNOWN = "unknown"
 
 
 class PhaseStatus(StrEnum):
+    """Represent the phase status contract, state, or service boundary."""
     COMPLETED = "completed"
     NOT_RUN = "not-run"
 
 
 class MeasurementQuality(StrEnum):
+    """Represent the measurement quality contract, state, or service boundary."""
     MEASURED = "measured"
     RECONSTRUCTED = "reconstructed"
     INFERRED = "inferred"
 
 
 class ObservationSource(StrEnum):
+    """Represent the observation source contract, state, or service boundary."""
     CODEX_CLI_RUNNER = "codex-cli-runner"
     CODEX_TASK_HISTORY = "codex-task-history"
     REPORT_IMPORT = "report-import"
 
 
 class EvaluationOutcome(StrEnum):
+    """Represent the evaluation outcome contract, state, or service boundary."""
     MANUAL_REVIEW = "manual-review"
     PASSED = "passed"
     DETERMINISTIC_FAILURE = "deterministic-failure"
 
 
 class CampaignMetadata(StrictModel):
+    """Represent the campaign metadata contract, state, or service boundary."""
     id: str = Field(min_length=1, max_length=160)
     execution_mode: ExecutionMode
     started_at: datetime
@@ -76,6 +83,7 @@ class CampaignMetadata(StrictModel):
 
 
 class TestMetadata(StrictModel):
+    """Represent the test metadata contract, state, or service boundary."""
     fixture_id: str = Field(min_length=1, max_length=160)
     fixture_revision: str = Field(pattern=r"^[a-f0-9]{64}$")
     workload_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -84,6 +92,7 @@ class TestMetadata(StrictModel):
 
 
 class RuntimeMetadata(StrictModel):
+    """Represent the runtime metadata contract, state, or service boundary."""
     model: str = Field(min_length=1, max_length=160)
     reasoning_effort: str = Field(min_length=1, max_length=40)
     speed: SpeedMode
@@ -98,6 +107,7 @@ class RuntimeMetadata(StrictModel):
 
 
 class PhaseMeasurement(StrictModel):
+    """Represent the phase measurement contract, state, or service boundary."""
     status: PhaseStatus
     duration_seconds: float | None = Field(default=None, ge=0)
     telemetry: PhaseTelemetry | None = Field(
@@ -121,6 +131,7 @@ class PhaseMeasurement(StrictModel):
 
 
 class PhaseMeasurements(StrictModel):
+    """Represent the phase measurements contract, state, or service boundary."""
     initial: PhaseMeasurement
     continuation: PhaseMeasurement = Field(
         default_factory=lambda: PhaseMeasurement(status=PhaseStatus.NOT_RUN)
@@ -128,10 +139,12 @@ class PhaseMeasurements(StrictModel):
 
 
 class TimingMetadata(StrictModel):
+    """Represent the timing metadata contract, state, or service boundary."""
     measured_phase_seconds: float = Field(ge=0)
 
 
 class ResultMetadata(StrictModel):
+    """Represent the result metadata contract, state, or service boundary."""
     outcome: EvaluationOutcome
     source: ObservationSource
     measurement_quality: MeasurementQuality
@@ -139,6 +152,7 @@ class ResultMetadata(StrictModel):
 
 
 class PerformanceObservation(StrictModel):
+    """Represent the performance observation contract, state, or service boundary."""
     schema_version: PerformanceSchemaVersion = PERFORMANCE_SCHEMA_VERSION
     record_id: str = Field(pattern=r"^[a-f0-9]{64}$")
     campaign: CampaignMetadata

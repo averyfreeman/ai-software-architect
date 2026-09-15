@@ -45,10 +45,12 @@ def _default_languages() -> list[Literal["python"]]:
 
 
 class StrictModel(BaseModel):
+    """Represent the strict model contract, state, or service boundary."""
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, strict=True)
 
 
 class WorkflowNode(StrEnum):
+    """Represent the workflow node contract, state, or service boundary."""
     UNDERSTAND = "understand"
     CLARIFY = "clarify"
     DESIGN = "design"
@@ -58,6 +60,7 @@ class WorkflowNode(StrEnum):
 
 
 class WorkflowStatus(StrEnum):
+    """Represent the workflow status contract, state, or service boundary."""
     ACTIVE = "active"
     COMPLETE = "complete"
     BLOCKED = "blocked"
@@ -65,6 +68,7 @@ class WorkflowStatus(StrEnum):
 
 
 class QualityAttribute(StrictModel):
+    """Represent the quality attribute contract, state, or service boundary."""
     name: ShortText
     priority: int = Field(ge=1, le=5)
     rationale: EvidenceText
@@ -72,6 +76,7 @@ class QualityAttribute(StrictModel):
 
 
 class ClarificationQuestion(StrictModel):
+    """Represent the clarification question contract, state, or service boundary."""
     id: str = Field(pattern=r"^Q-[0-9]{3}$")
     question: EvidenceText
     decision_impact: EvidenceText
@@ -80,6 +85,7 @@ class ClarificationQuestion(StrictModel):
 
 
 class EvidenceClaim(StrictModel):
+    """Represent the evidence claim contract, state, or service boundary."""
     kind: Literal[
         "confirmed-fact",
         "static-indication",
@@ -103,6 +109,7 @@ class EvidenceClaim(StrictModel):
 
 
 class ArchitectureOption(StrictModel):
+    """Represent the architecture option contract, state, or service boundary."""
     id: OptionId
     name: ShortText
     summary: EvidenceText
@@ -114,6 +121,7 @@ class ArchitectureOption(StrictModel):
 
 
 class ComparedArchitectureOption(StrictModel):
+    """Represent the compared architecture option contract, state, or service boundary."""
     id: OptionId
     category: PatternCategory
     name: ShortText
@@ -135,6 +143,7 @@ class ComparedArchitectureOption(StrictModel):
 
 
 class SupportingPattern(StrictModel):
+    """Represent the supporting pattern contract, state, or service boundary."""
     category: PatternCategory
     name: ShortText
     canonical_reference: ShortText
@@ -148,6 +157,7 @@ class SupportingPattern(StrictModel):
 
 
 class ArchitectureOptionComparison(StrictModel):
+    """Represent the architecture option comparison contract, state, or service boundary."""
     decision_scope: EvidenceText
     scoring_criteria: list[EvidenceText] = Field(min_length=1, max_length=10)
     evidence_and_assumptions: list[EvidenceClaim] = Field(
@@ -188,6 +198,7 @@ class ArchitectureOptionComparison(StrictModel):
 
 
 class ArchitectureDecision(StrictModel):
+    """Represent the architecture decision contract, state, or service boundary."""
     id: ADRId
     title: ShortText
     status: Literal["proposed", "accepted", "rejected", "superseded"]
@@ -216,12 +227,14 @@ class ArchitectureDecision(StrictModel):
 
 
 class ArchitectureDecisionArtifact(StrictModel):
+    """Represent the architecture decision artifact contract, state, or service boundary."""
     schema_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
     revision: int = Field(ge=1)
     decision: ArchitectureDecision
 
 
 class Component(StrictModel):
+    """Represent the component contract, state, or service boundary."""
     id: ComponentId
     responsibility: EvidenceText
     owns_data: list[ShortText] = Field(default_factory=list, max_length=100)
@@ -229,11 +242,13 @@ class Component(StrictModel):
 
 
 class ExternalBoundary(StrictModel):
+    """Represent the external boundary contract, state, or service boundary."""
     id: ComponentId
     responsibility: EvidenceText
 
 
 class DependencyRule(StrictModel):
+    """Represent the dependency rule contract, state, or service boundary."""
     source: ComponentId
     target: ComponentId
     policy: Literal["allow", "deny", "allow-via-interface"] = Field(
@@ -260,6 +275,7 @@ class DependencyRule(StrictModel):
 
 
 class ArchitectureContract(StrictModel):
+    """Represent the architecture contract contract, state, or service boundary."""
     schema_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
     revision: int = Field(ge=1)
     scope: ShortText
@@ -318,6 +334,7 @@ class ArchitectureArtifactBundle(StrictModel):
 
 
 class ArchitectureAnalysisResult(StrictModel):
+    """Represent the architecture analysis result contract, state, or service boundary."""
     status: Literal[
         "needs_clarification",
         "ready_for_approval",
@@ -364,6 +381,7 @@ class ArchitectureAnalysisResult(StrictModel):
 
 
 class ConformanceFinding(StrictModel):
+    """Represent the conformance finding contract, state, or service boundary."""
     id: str = Field(pattern=r"^F-[0-9]{3}$")
     classification: Literal["confirmed-violation", "possible-drift", "acceptable-deviation"]
     severity: Literal["info", "low", "medium", "high", "critical"]
@@ -375,6 +393,7 @@ class ConformanceFinding(StrictModel):
 
 
 class ConformanceReport(StrictModel):
+    """Represent the conformance report contract, state, or service boundary."""
     scope: ShortText
     findings: list[ConformanceFinding] = Field(default_factory=list, max_length=200)
     files_examined: int = Field(ge=0)
@@ -385,20 +404,24 @@ class ConformanceReport(StrictModel):
 
 
 class ContractValidationInput(StrictModel):
+    """Represent the contract validation input contract, state, or service boundary."""
     yaml_content: str = Field(min_length=1, max_length=500_000)
 
 
 class CompleteContractValidationInput(ContractValidationInput):
+    """Represent the complete contract validation input contract, state, or service boundary."""
     validation_scope: Literal["complete-candidate-contract"]
 
 
 class DecisionListInput(StrictModel):
+    """Represent the decision list input contract, state, or service boundary."""
     statuses: list[Literal["proposed", "accepted", "rejected", "superseded"]] = Field(
         default_factory=list, max_length=4
     )
 
 
 class SourceFileInput(StrictModel):
+    """Represent the source file input contract, state, or service boundary."""
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False, strict=True)
 
     relative_path: RelativePathText
@@ -414,6 +437,7 @@ class SourceFileInput(StrictModel):
 
 
 class DependencyStatementInput(StrictModel):
+    """Represent the dependency statement input contract, state, or service boundary."""
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False, strict=True)
 
     relative_path: RelativePathText
@@ -474,6 +498,7 @@ def _validate_inline_analysis_content(
 
 
 class RepositoryAnalysisInput(StrictModel):
+    """Represent the repository analysis input contract, state, or service boundary."""
     relative_roots: list[RelativePathText] = Field(default_factory=list, max_length=20)
     source_files: list[SourceFileInput] = Field(
         default_factory=list, max_length=MAX_INLINE_SOURCE_FILES
@@ -508,6 +533,7 @@ class RepositoryAnalysisInput(StrictModel):
 
 
 class InlineRepositoryAnalysisInput(StrictModel):
+    """Represent the inline repository analysis input contract, state, or service boundary."""
     source_files: list[SourceFileInput] = Field(
         default_factory=list, max_length=MAX_INLINE_SOURCE_FILES
     )
@@ -561,10 +587,12 @@ class DependencyAnalysisInput(StrictModel):
 
 
 class BoundaryCheckInput(RepositoryAnalysisInput):
+    """Represent the boundary check input contract, state, or service boundary."""
     contract_yaml: str = Field(min_length=1, max_length=500_000)
 
 
 class InlineBoundaryCheckInput(InlineRepositoryAnalysisInput):
+    """Represent the inline boundary check input contract, state, or service boundary."""
     contract_yaml: str = Field(min_length=1, max_length=500_000)
 
     def to_domain_input(self) -> BoundaryCheckInput:
@@ -577,16 +605,19 @@ class InlineBoundaryCheckInput(InlineRepositoryAnalysisInput):
 
 
 class ArtifactSecretScanInput(StrictModel):
+    """Represent the artifact secret scan input contract, state, or service boundary."""
     content: str = Field(min_length=1, max_length=500_000)
     artifact_kind: Literal["adr", "contract", "context", "implementation-plan"]
 
 
 class SecretFinding(StrictModel):
+    """Represent the secret finding contract, state, or service boundary."""
     category: Literal["private-key", "credential", "token"]
     line: int = Field(ge=1)
 
 
 class ArtifactSecretScanResult(StrictModel):
+    """Represent the artifact secret scan result contract, state, or service boundary."""
     safe_to_write: bool
     findings: list[SecretFinding] = Field(default_factory=list, max_length=100)
     truncated: bool = False
@@ -599,6 +630,7 @@ class ArtifactSecretScanResult(StrictModel):
 
 
 class ContractValidationResult(StrictModel):
+    """Represent the contract validation result contract, state, or service boundary."""
     valid: bool
     schema_version: str | None = None
     errors: list[EvidenceText] = Field(default_factory=list, max_length=100)
@@ -615,6 +647,7 @@ class ContractValidationResult(StrictModel):
 
 
 class ToolError(StrictModel):
+    """Represent the tool error contract, state, or service boundary."""
     code: Literal[
         "invalid-input",
         "not-found",
@@ -632,6 +665,7 @@ class ToolError(StrictModel):
 
 
 class DecisionListResult(StrictModel):
+    """Represent the decision list result contract, state, or service boundary."""
     decisions: list[ArchitectureDecision] = Field(default_factory=list, max_length=200)
     invalid_files: list[RelativePathText] = Field(default_factory=list, max_length=200)
     files_examined: int = Field(ge=0)
@@ -640,12 +674,14 @@ class DecisionListResult(StrictModel):
 
 
 class DependencyEdge(StrictModel):
+    """Represent the dependency edge contract, state, or service boundary."""
     source: ShortText
     target: ShortText
     evidence: EvidenceText
 
 
 class DependencyGraphEvidence(StrictModel):
+    """Represent the dependency graph evidence contract, state, or service boundary."""
     edges: list[DependencyEdge] = Field(default_factory=list, max_length=5_000)
     files_examined: int = Field(ge=0)
     files_skipped: int = Field(ge=0)
@@ -654,6 +690,7 @@ class DependencyGraphEvidence(StrictModel):
 
 
 class StrikeEvent(StrictModel):
+    """Represent the strike event contract, state, or service boundary."""
     reason: Literal[
         "workspace-escape",
         "protected-secret-access",
@@ -668,6 +705,7 @@ class StrikeEvent(StrictModel):
 
 
 class WorkflowState(StrictModel):
+    """Represent the workflow state contract, state, or service boundary."""
     run_id: RunId
     status: WorkflowStatus
     current_node: WorkflowNode | None

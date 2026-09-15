@@ -12,6 +12,7 @@ from ai_architect_schemas import ArchitectureArtifactBundle, ArchitectureContrac
 
 
 def generate_schemas(output_directory: Path) -> None:
+    """Provide the generate schemas operation used by the architecture workflow."""
     output_directory.mkdir(parents=True, exist_ok=True)
     models = {
         "architecture-contract.schema.json": ArchitectureContract,
@@ -32,6 +33,7 @@ def generate_schemas(output_directory: Path) -> None:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     generate_schemas(Path(__file__).parent / "generated")
 
 

@@ -56,6 +56,7 @@ def _latency_objective(
 
 @dataclass(frozen=True)
 class PerformanceRow:
+    """Represent the performance row contract, state, or service boundary."""
     campaign: str
     fixture: str
     fixture_revision: str
@@ -76,6 +77,7 @@ class PerformanceRow:
 
 @dataclass(frozen=True)
 class TelemetryRow:
+    """Represent the telemetry row contract, state, or service boundary."""
     campaign: str
     fixture: str
     fixture_revision: str
@@ -99,6 +101,7 @@ class TelemetryRow:
 
 @dataclass(frozen=True)
 class ToolTimelineRow:
+    """Represent the tool timeline row contract, state, or service boundary."""
     campaign: str
     fixture: str
     fixture_revision: str
@@ -114,6 +117,7 @@ class ToolTimelineRow:
 
 @dataclass(frozen=True)
 class StatisticRow:
+    """Represent the statistic row contract, state, or service boundary."""
     fixture: str
     phase: str
     model: str
@@ -137,6 +141,7 @@ class StatisticRow:
 
 @dataclass(frozen=True)
 class FixtureOverviewStatisticRow:
+    """Represent the fixture overview statistic row contract, state, or service boundary."""
     fixture: str
     phase: str
     observation_count: int
@@ -159,6 +164,7 @@ class FixtureOverviewStatisticRow:
 
 @dataclass(frozen=True)
 class LatencyObjectiveRow:
+    """Represent the latency objective row contract, state, or service boundary."""
     plugin_version: str
     fixture: str
     phase: str
@@ -179,6 +185,7 @@ class LatencyObjectiveRow:
 
 @dataclass(frozen=True)
 class RecommendationConsistencyRow:
+    """Represent the recommendation consistency row contract, state, or service boundary."""
     fixture: str
     fixture_revision: str
     workload_fingerprint: str
@@ -246,6 +253,7 @@ def _distribution(samples: Sequence[float]) -> _Distribution:
 
 
 def observation_rows(records: Sequence[PerformanceObservation]) -> list[PerformanceRow]:
+    """Provide the observation rows operation used by the architecture workflow."""
     rows: list[PerformanceRow] = []
     for record in sorted(
         records,
@@ -284,6 +292,7 @@ def observation_rows(records: Sequence[PerformanceObservation]) -> list[Performa
 
 
 def telemetry_rows(records: Sequence[PerformanceObservation]) -> list[TelemetryRow]:
+    """Provide the telemetry rows operation used by the architecture workflow."""
     rows: list[TelemetryRow] = []
     for record in sorted(
         records,
@@ -330,6 +339,7 @@ def telemetry_rows(records: Sequence[PerformanceObservation]) -> list[TelemetryR
 def tool_timeline_rows(
     records: Sequence[PerformanceObservation],
 ) -> list[ToolTimelineRow]:
+    """Provide the tool timeline rows operation used by the architecture workflow."""
     rows: list[ToolTimelineRow] = []
     for record in sorted(
         records,
@@ -365,6 +375,7 @@ def tool_timeline_rows(
 def fixture_overview_statistics(
     records: Sequence[PerformanceObservation],
 ) -> list[FixtureOverviewStatisticRow]:
+    """Provide the fixture overview statistics operation used by the architecture workflow."""
     grouped: dict[tuple[str, str], list[tuple[PerformanceObservation, float]]] = (
         defaultdict(list)
     )
@@ -500,6 +511,7 @@ def recommendation_consistency_rows(
 
 
 def grouped_statistics(records: Sequence[PerformanceObservation]) -> list[StatisticRow]:
+    """Compare or group grouped statistics for evidence-backed reporting."""
     values: dict[tuple[str, ...], list[float]] = defaultdict(list)
     group_counts: dict[tuple[str, ...], int] = defaultdict(int)
     for record in records:
@@ -640,6 +652,7 @@ def render_markdown(
     objective_rows: Sequence[LatencyObjectiveRow],
     consistency_rows: Sequence[RecommendationConsistencyRow],
 ) -> str:
+    """Render or persist markdown using the repository's artifact rules."""
     lines = [
         "# Exploratory Evaluation Performance",
         "",
@@ -879,6 +892,7 @@ def render_markdown(
 
 
 def write_reports(ledger: Path, output_directory: Path) -> tuple[int, int]:
+    """Render or persist reports using the repository's artifact rules."""
     records = load_performance_ledger(ledger)
     rows = observation_rows(records)
     telemetry = telemetry_rows(records)
@@ -972,6 +986,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run this module's command-line entry point."""
     args = _parser().parse_args(argv)
     try:
         observations, groups = write_reports(args.ledger, args.output_directory)

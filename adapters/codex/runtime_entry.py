@@ -9,6 +9,7 @@ import sys
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     arguments = sys.argv[1:]
     if arguments == ["--repository-snapshot", "--root", "."]:
         try:

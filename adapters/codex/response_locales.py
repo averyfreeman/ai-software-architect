@@ -10,6 +10,7 @@ from enum import StrEnum
 
 
 class ComparisonSection(StrEnum):
+    """Represent the comparison section contract, state, or service boundary."""
     DECISION_SCOPE = "decision_scope"
     EVIDENCE = "evidence"
     ALTERNATIVES = "alternatives"
@@ -141,6 +142,7 @@ COMPARISON_LOCALES = (
 
 
 def comparison_locale(code: str) -> ComparisonLocale:
+    """Provide the comparison locale operation used by the architecture workflow."""
     normalized = code.casefold()
     for locale in COMPARISON_LOCALES:
         if locale.code.casefold() == normalized:
@@ -149,6 +151,7 @@ def comparison_locale(code: str) -> ComparisonLocale:
 
 
 def matching_comparison_locale(message: str) -> ComparisonLocale:
+    """Provide the matching comparison locale operation used by the architecture workflow."""
     matches = []
     for locale in COMPARISON_LOCALES:
         positions = [message.find(heading) for heading in locale.headings]
@@ -160,6 +163,7 @@ def matching_comparison_locale(message: str) -> ComparisonLocale:
 
 
 def contains_comparison_section(message: str, section: ComparisonSection) -> bool:
+    """Provide the contains comparison section operation used by the architecture workflow."""
     return any(locale.heading(section) in message for locale in COMPARISON_LOCALES)
 
 
@@ -167,6 +171,7 @@ def locale_containing_section(
     message: str,
     section: ComparisonSection,
 ) -> ComparisonLocale:
+    """Provide the locale containing section operation used by the architecture workflow."""
     matches = [
         locale for locale in COMPARISON_LOCALES if locale.heading(section) in message
     ]
@@ -176,6 +181,7 @@ def locale_containing_section(
 
 
 def comparison_contract_guidance() -> str:
+    """Provide the comparison contract guidance operation used by the architecture workflow."""
     rendered = []
     for locale in COMPARISON_LOCALES:
         headings = ", ".join(f"`{heading}`" for heading in locale.headings)

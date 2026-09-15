@@ -13,6 +13,7 @@ OUTPUT = Path(__file__).with_name("acceptance.feature")
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     text = SPEC.read_text(encoding="utf-8")
     marker = "```gherkin\n"
     if text.count(marker) != 1:
@@ -23,4 +24,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

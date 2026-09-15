@@ -57,6 +57,7 @@ def _display_path(path: Path) -> str:
 
 
 class CampaignOverride(StrictModel):
+    """Represent the campaign override contract, state, or service boundary."""
     campaign_id: str = Field(min_length=1)
     speed: SpeedMode | None = None
     git_commit: str | None = Field(default=None, min_length=1)
@@ -64,11 +65,13 @@ class CampaignOverride(StrictModel):
 
 
 class ImportOverrides(StrictModel):
+    """Represent the import overrides contract, state, or service boundary."""
     schema_version: str
     overrides: list[CampaignOverride] = Field(default_factory=list)
 
 
 class ImportExclusion(StrictModel):
+    """Represent the import exclusion contract, state, or service boundary."""
     report: str
     fixture_id: str
     phase: str | None = None
@@ -76,6 +79,7 @@ class ImportExclusion(StrictModel):
 
 
 class ReportImportPreview(StrictModel):
+    """Represent the report import preview contract, state, or service boundary."""
     schema_version: str = "1.0.0"
     generated_at: datetime
     reports: list[str]
@@ -259,6 +263,7 @@ def import_reports(
     default_host: str,
     apply: bool,
 ) -> ReportImportPreview:
+    """Provide the import reports operation used by the architecture workflow."""
     overrides = _load_overrides(overrides_path)
     accepted: list[PerformanceObservation] = []
     exclusions: list[ImportExclusion] = []
@@ -313,6 +318,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run this module's command-line entry point."""
     args = _parser().parse_args(argv)
     reports = list(args.report)
     if args.reports_root:

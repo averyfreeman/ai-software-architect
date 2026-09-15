@@ -59,10 +59,14 @@ def _parent_is_alive(parent_pid: int) -> bool:
 
         synchronize = 0x00100000
         wait_timeout = 0x00000102
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        win_dll = getattr(ctypes, "WinDLL", None)
+        get_last_error = getattr(ctypes, "get_last_error", None)
+        if not callable(win_dll) or not callable(get_last_error):
+            return False
+        kernel32 = win_dll("kernel32", use_last_error=True)
         handle = int(kernel32.OpenProcess(synchronize, False, parent_pid))
         if handle == 0:
-            return ctypes.get_last_error() == 5
+            return bool(get_last_error() == 5)
         try:
             return int(kernel32.WaitForSingleObject(handle, 0)) == wait_timeout
         finally:
@@ -243,6 +247,7 @@ async def _run_stdio_without_closing_process_streams() -> None:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     stop_event = threading.Event()
     watchdog = threading.Thread(
         target=_watch_process_lifecycle,

@@ -28,6 +28,7 @@ def grade_phase(
     repository_changes: list[str],
     policy: VerificationPolicy,
 ) -> list[DeterministicAssertion]:
+    """Provide the grade phase operation used by the architecture workflow."""
     assertions = [
         DeterministicAssertion(
             name="codex-exit-success",

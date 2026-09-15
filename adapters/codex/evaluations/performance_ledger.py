@@ -24,6 +24,7 @@ class LedgerLockTimeoutError(TimeoutError):
 
 
 def load_performance_ledger(path: Path) -> list[PerformanceObservation]:
+    """Load performance ledger from a validated source."""
     if not path.exists():
         return []
     records: list[PerformanceObservation] = []

@@ -17,6 +17,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Transaction:
+    """Represent the transaction contract, state, or service boundary."""
     booked_on: date
     description: str
     amount: Decimal
@@ -32,6 +33,7 @@ CATEGORY_RULES = {
 
 
 def load_transactions(path: Path) -> list[Transaction]:
+    """Load transactions from a validated source."""
     transactions: list[Transaction] = []
     with path.open(encoding="utf-8", newline="") as source:
         for row in csv.DictReader(source):
@@ -46,6 +48,7 @@ def load_transactions(path: Path) -> list[Transaction]:
 
 
 def categorize(transaction: Transaction) -> Transaction:
+    """Provide the categorize operation used by the architecture workflow."""
     normalized = re.sub(r"\s+", " ", transaction.description.casefold()).strip()
     for category, matchers in CATEGORY_RULES.items():
         if any(matcher in normalized for matcher in matchers):
@@ -59,6 +62,7 @@ def categorize(transaction: Transaction) -> Transaction:
 
 
 def summarize(transactions: list[Transaction]) -> dict[str, Decimal]:
+    """Provide the summarize operation used by the architecture workflow."""
     totals: defaultdict[str, Decimal] = defaultdict(Decimal)
     for transaction in transactions:
         totals[transaction.category] += transaction.amount
@@ -66,6 +70,7 @@ def summarize(transactions: list[Transaction]) -> dict[str, Decimal]:
 
 
 def render_report(totals: dict[str, Decimal]) -> str:
+    """Render or persist report using the repository's artifact rules."""
     heading = "Monthly expense summary"
     lines = [heading, "=" * len(heading)]
     lines.extend(f"{category:12} {amount:>10.2f}" for category, amount in totals.items())
@@ -73,6 +78,7 @@ def render_report(totals: dict[str, Decimal]) -> str:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     parser = argparse.ArgumentParser(description="Summarize a transaction CSV file.")
     parser.add_argument("transactions", type=Path)
     arguments = parser.parse_args()

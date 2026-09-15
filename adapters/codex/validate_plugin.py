@@ -21,6 +21,7 @@ SEMVER = re.compile(
 
 
 def validate(root: Path) -> None:
+    """Validate  against repository invariants."""
     root = root.resolve(strict=True)
     manifest_path = root / ".codex-plugin" / "plugin.json"
     manifest = json.loads(manifest_path.read_text("utf-8"))
@@ -184,6 +185,7 @@ def validate(root: Path) -> None:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     parser = argparse.ArgumentParser()
     parser.add_argument("plugin", type=Path)
     args = parser.parse_args()

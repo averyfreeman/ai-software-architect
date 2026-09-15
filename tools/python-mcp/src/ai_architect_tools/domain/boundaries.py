@@ -28,6 +28,7 @@ def _matches_component(module: str, component: str) -> bool:
 def check_architecture_boundaries(
     reader: SourceReader | None, request: BoundaryCheckInput
 ) -> ConformanceReport:
+    """Validate architecture boundaries against repository invariants."""
     validation = validate_architecture_contract(
         ContractValidationInput(yaml_content=request.contract_yaml)
     )

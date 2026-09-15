@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class StrictModel(BaseModel):
+    """Represent the strict model contract, state, or service boundary."""
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
@@ -53,6 +54,7 @@ Activation = Annotated[
 
 
 class VerificationPolicy(StrictModel):
+    """Represent the verification policy contract, state, or service boundary."""
     repository_changes: Literal["forbid", "architecture-artifacts-only", "allow"]
     required_repository_changes: list[str] = Field(default_factory=list)
     forbidden_event_types: list[str] = Field(default_factory=list)
@@ -60,6 +62,7 @@ class VerificationPolicy(StrictModel):
 
 
 class Continuation(StrictModel):
+    """Represent the continuation contract, state, or service boundary."""
     prompt: str = Field(min_length=1)
     expected: list[str] = Field(min_length=1)
     forbidden_actions: list[str] = Field(default_factory=list)
@@ -67,11 +70,13 @@ class Continuation(StrictModel):
 
 
 class ExpectedDecision(StrictModel):
+    """Represent the expected decision contract, state, or service boundary."""
     selected_category: PatternCategory
     selected_name: str = Field(min_length=1, max_length=120)
 
 
 class EvaluationFixture(StrictModel):
+    """Represent the evaluation fixture contract, state, or service boundary."""
     schema_version: str
     id: str = Field(min_length=1)
     scenario: str = Field(pattern=r"^[A-Z]+-[0-9]{3}$")
@@ -103,11 +108,13 @@ class EvaluationFixture(StrictModel):
 
 
 class AssertionStatus(StrEnum):
+    """Represent the assertion status contract, state, or service boundary."""
     PASS = "pass"  # noqa: S105 - evaluation status, not a credential
     FAIL = "fail"
 
 
 class DeterministicAssertion(StrictModel):
+    """Represent the deterministic assertion contract, state, or service boundary."""
     name: str
     status: AssertionStatus
     evidence: str
@@ -155,6 +162,7 @@ class DecisionObservation(StrictModel):
 
 
 class PhaseResult(StrictModel):
+    """Represent the phase result contract, state, or service boundary."""
     name: Literal["initial", "continuation"]
     exit_code: int
     duration_seconds: float = Field(ge=0)
@@ -174,6 +182,7 @@ class PhaseResult(StrictModel):
 
 
 class EvaluationStatus(StrEnum):
+    """Represent the evaluation status contract, state, or service boundary."""
     DETERMINISTIC_FAILURE = "deterministic-failure"
     INFRASTRUCTURE_ERROR = "infrastructure-error"
     MANUAL_REVIEW = "manual-review"
@@ -181,6 +190,7 @@ class EvaluationStatus(StrEnum):
 
 
 class FixtureResult(StrictModel):
+    """Represent the fixture result contract, state, or service boundary."""
     fixture_id: str
     scenario: str
     status: EvaluationStatus
@@ -190,6 +200,7 @@ class FixtureResult(StrictModel):
 
 
 class CampaignReport(StrictModel):
+    """Represent the campaign report contract, state, or service boundary."""
     schema_version: str = "1.4.0"
     run_kind: Literal["exploratory-campaign", "release-gate-smoke"] = (
         "exploratory-campaign"
@@ -212,5 +223,6 @@ class CampaignReport(StrictModel):
 
 
 def load_fixture(path: Path) -> EvaluationFixture:
+    """Load fixture from a validated source."""
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     return EvaluationFixture.model_validate(raw)

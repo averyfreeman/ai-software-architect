@@ -13,6 +13,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class ReferenceSpec:
+    """Represent the reference spec contract, state, or service boundary."""
     name: str
     category: str
     filename: str
@@ -35,6 +36,7 @@ def _tokens(value: str) -> tuple[str, ...]:
 
 
 class ReferenceCatalog:
+    """Represent the reference catalog contract, state, or service boundary."""
     def __init__(self, entries: tuple[ReferenceSpec, ...]) -> None:
         self.entries = entries
         by_name: dict[str, ReferenceSpec] = {}
@@ -90,6 +92,7 @@ class ReferenceCatalog:
 
 
 def load_reference_catalog(path: Path | None = None) -> ReferenceCatalog:
+    """Load reference catalog from a validated source."""
     source = path or Path(__file__).with_name("reference_catalog.json")
     payload = json.loads(source.read_text(encoding="utf-8"))
     return ReferenceCatalog(

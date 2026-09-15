@@ -42,6 +42,7 @@ HUNK_PATTERN = re.compile(r"^@@.*$", flags=re.MULTILINE)
 
 @dataclass(frozen=True)
 class ArtifactCandidate:
+    """Represent the artifact candidate contract, state, or service boundary."""
     path: Path
     content: str
     kind: ArtifactKind
@@ -192,6 +193,7 @@ def proposed_artifact_candidates(
     tool_input: object,
     workspace: Path,
 ) -> tuple[ArtifactCandidate, ...]:
+    """Provide the proposed artifact candidates operation used by the architecture workflow."""
     try:
         from adapters.codex.control_plane import _patch_text_from_tool_input
     except ModuleNotFoundError as exc:

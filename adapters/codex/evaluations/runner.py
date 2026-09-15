@@ -52,6 +52,7 @@ PLUGIN_NAME = "ai-software-architect"
 
 @dataclass(frozen=True)
 class InstalledPluginIdentity:
+    """Represent the installed plugin identity contract, state, or service boundary."""
     plugin_id: str
     marketplace: str
     version: str
@@ -734,6 +735,7 @@ def _summary(report: CampaignReport) -> str:
 
 
 def run_campaign(args: argparse.Namespace) -> CampaignReport:
+    """Provide the run campaign operation used by the architecture workflow."""
     started = datetime.now(UTC)
     campaign_started = time.monotonic()
     selected = set(args.fixture or [])
@@ -999,6 +1001,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run this module's command-line entry point."""
     args = _parser().parse_args(argv)
     if args.timeout_seconds < 1:
         raise SystemExit("--timeout-seconds must be positive")

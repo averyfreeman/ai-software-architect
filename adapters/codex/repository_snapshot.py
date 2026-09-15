@@ -120,8 +120,10 @@ TEXT_EXTENSIONS = {
 
 def _is_reparse_point(path: Path) -> bool:
     try:
-        attributes = path.lstat().st_file_attributes
-    except (AttributeError, OSError):
+        attributes = getattr(path.lstat(), "st_file_attributes", None)
+    except OSError:
+        return path.is_symlink()
+    if not isinstance(attributes, int):
         return path.is_symlink()
     return bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
 
@@ -360,6 +362,7 @@ def serialize_repository_snapshot(snapshot: dict[str, Any]) -> bytes:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     snapshot = create_repository_snapshot(Path.cwd())
     encoded = serialize_repository_snapshot(snapshot)
     sys.stdout.buffer.write(encoded)

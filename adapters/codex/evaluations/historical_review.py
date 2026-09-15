@@ -68,18 +68,21 @@ FIXTURE_TITLE_MARKERS = {
 
 
 class ReviewDecision(StrEnum):
+    """Represent the review decision contract, state, or service boundary."""
     ACCEPTED = "accepted"
     EXCLUDED = "excluded"
     NEEDS_REVIEW = "needs-review"
 
 
 class ReviewConfidence(StrEnum):
+    """Represent the review confidence contract, state, or service boundary."""
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
 class HistoricalPhaseReview(StrictModel):
+    """Represent the historical phase review contract, state, or service boundary."""
     source_task_id: str
     source_task_title: str
     source_turn_id: str
@@ -123,6 +126,7 @@ class HistoricalPhaseReview(StrictModel):
 
 
 class HistoricalReviewBatch(StrictModel):
+    """Represent the historical review batch contract, state, or service boundary."""
     schema_version: str = "1.0.0"
     reviewer_session_id: str = Field(min_length=1)
     reviewed_at: datetime
@@ -130,6 +134,7 @@ class HistoricalReviewBatch(StrictModel):
 
 
 class ExportedTurn(StrictModel):
+    """Represent the exported turn contract, state, or service boundary."""
     id: str
     status: str
     started_at: datetime | None = None
@@ -141,6 +146,7 @@ class ExportedTurn(StrictModel):
 
 
 class ExportedTask(StrictModel):
+    """Represent the exported task contract, state, or service boundary."""
     id: str
     title: str
     created_at: datetime
@@ -153,6 +159,7 @@ class ExportedTask(StrictModel):
 
 
 class HistoricalTaskExport(StrictModel):
+    """Represent the historical task export contract, state, or service boundary."""
     schema_version: str = "1.0.0"
     exported_at: datetime
     archived: bool
@@ -467,6 +474,7 @@ def export_historical_tasks(
     archived: bool,
     task_ids: set[str],
 ) -> HistoricalTaskExport:
+    """Export historical tasks while preserving provenance and typed contracts."""
     tasks: list[ExportedTask] = []
     for summary in client.list_threads(archived=archived):
         task_id = str(summary.get("id", ""))
@@ -509,6 +517,7 @@ def export_historical_tasks(
 def historical_observations(
     batch: HistoricalReviewBatch,
 ) -> list[PerformanceObservation]:
+    """Provide the historical observations operation used by the architecture workflow."""
     accepted = [
         phase for phase in batch.phases if phase.decision == ReviewDecision.ACCEPTED
     ]
@@ -605,6 +614,7 @@ def apply_historical_review(
     batch: HistoricalReviewBatch,
     ledger: Path,
 ) -> int:
+    """Provide the apply historical review operation used by the architecture workflow."""
     return append_performance_observations(ledger, historical_observations(batch))
 
 
@@ -627,6 +637,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run this module's command-line entry point."""
     args = _parser().parse_args(argv)
     try:
         if args.command == "export":

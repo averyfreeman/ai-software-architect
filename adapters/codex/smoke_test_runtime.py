@@ -54,6 +54,7 @@ def _hook_output(response: dict[str, object]) -> dict[str, object]:
 
 
 def smoke_test_hook(executable: Path) -> None:
+    """Provide the smoke test hook operation used by the architecture workflow."""
     powershell = shutil.which("powershell.exe")
     if powershell is None:
         raise RuntimeError("PowerShell is required to test the Windows hook command")
@@ -184,6 +185,7 @@ def smoke_test_hook(executable: Path) -> None:
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     parser = argparse.ArgumentParser()
     parser.add_argument("executable", type=Path)
     args = parser.parse_args()

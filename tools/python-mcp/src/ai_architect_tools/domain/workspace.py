@@ -43,6 +43,7 @@ PROTECTED_PATTERNS = (
 
 
 class WorkspaceAccessError(Exception):
+    """Represent the workspace access error contract, state, or service boundary."""
     def __init__(self, code: str, message: str, relative_path: str | None = None) -> None:
         super().__init__(message)
         self.code = code
@@ -50,6 +51,7 @@ class WorkspaceAccessError(Exception):
 
 
 class SourceReader(Protocol):
+    """Represent the source reader contract, state, or service boundary."""
     def read_text(self, relative_path: str, allowed_suffixes: set[str]) -> str: ...
 
     def iter_files(
@@ -112,8 +114,10 @@ def validate_inline_python_path(path: str) -> PurePosixPath:
 
 def _is_reparse_point(path: Path) -> bool:
     try:
-        attributes = path.lstat().st_file_attributes
-    except AttributeError:
+        attributes = getattr(path.lstat(), "st_file_attributes", None)
+    except OSError:
+        return path.is_symlink()
+    if not isinstance(attributes, int):
         return path.is_symlink()
     return bool(attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 
@@ -121,18 +125,23 @@ def _is_reparse_point(path: Path) -> bool:
 def _final_windows_path(handle: BinaryIO) -> Path:
     import msvcrt
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    win_dll = getattr(ctypes, "WinDLL", None)
+    get_osfhandle = getattr(msvcrt, "get_osfhandle", None)
+    get_last_error = getattr(ctypes, "get_last_error", None)
+    if not callable(win_dll) or not callable(get_osfhandle) or not callable(get_last_error):
+        raise OSError("Windows file-handle APIs are unavailable on this platform")
+    kernel32 = win_dll("kernel32", use_last_error=True)
     function = kernel32.GetFinalPathNameByHandleW
     function.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
     function.restype = ctypes.c_uint32
-    os_handle = msvcrt.get_osfhandle(handle.fileno())
+    os_handle = get_osfhandle(handle.fileno())
     size = function(os_handle, None, 0, 0)
     if size == 0:
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(get_last_error(), "GetFinalPathNameByHandleW failed")
     buffer = ctypes.create_unicode_buffer(size + 1)
     written = function(os_handle, buffer, len(buffer), 0)
     if written == 0 or written >= len(buffer):
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(get_last_error(), "GetFinalPathNameByHandleW failed")
     value = buffer.value
     if value.startswith("\\\\?\\UNC\\"):
         value = "\\\\" + value[8:]

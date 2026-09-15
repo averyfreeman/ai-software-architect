@@ -250,6 +250,7 @@ def handle_user_prompt_submit(
     plugin_data: Path,
     plugin_root: Path | None = None,
 ) -> dict[str, Any]:
+    """Provide the handle user prompt submit operation used by the architecture workflow."""
     prompt = payload.get("prompt")
     prompt_text = prompt if isinstance(prompt, str) else ""
     context = with_reference_hints(classify_prompt(prompt_text), prompt_text)
@@ -351,6 +352,7 @@ def handle_pre_tool_use(
     plugin_data: Path,
     plugin_root: Path | None = None,
 ) -> dict[str, Any]:
+    """Provide the handle pre tool use operation used by the architecture workflow."""
     context = _read_context(payload, plugin_data)
     workspace = (
         Path(payload["cwd"])
@@ -489,6 +491,7 @@ def handle_stop(
     payload: dict[str, Any],
     plugin_data: Path,
 ) -> dict[str, Any]:
+    """Provide the handle stop operation used by the architecture workflow."""
     context = _read_context(payload, plugin_data)
     if not context.active:
         return {}
@@ -557,6 +560,7 @@ def handle_hook(
     plugin_root: Path | None = None,
     expected_event: str | None = None,
 ) -> dict[str, Any]:
+    """Provide the handle hook operation used by the architecture workflow."""
     handlers = {
         "UserPromptSubmit": handle_user_prompt_submit,
         "PreToolUse": handle_pre_tool_use,

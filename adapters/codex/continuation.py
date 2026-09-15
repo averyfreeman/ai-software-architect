@@ -26,21 +26,25 @@ except ModuleNotFoundError as exc:
 
 
 class PendingInteraction(StrEnum):
+    """Represent the pending interaction contract, state, or service boundary."""
     CLARIFICATION = "clarification"
     DECISION = "decision"
 
 
 class WorkflowPhase(StrEnum):
+    """Represent the workflow phase contract, state, or service boundary."""
     CLARIFY = "clarify"
     APPROVE = "approve"
 
 
 class ApprovalTransition(StrEnum):
+    """Represent the approval transition contract, state, or service boundary."""
     RESUME_DESIGN = "resume_design"
     RECORD_AND_HANDOFF = "record_and_handoff"
 
 
 class CheckpointPhase(StrEnum):
+    """Represent the checkpoint phase contract, state, or service boundary."""
     ACTIVE = "active"
     CLARIFY = "clarify"
     AWAIT_DECISION = "await_decision"
@@ -61,6 +65,7 @@ class WorkflowCheckpoint(BaseModel):
 
 @dataclass(frozen=True)
 class SessionContinuation:
+    """Represent the session continuation contract, state, or service boundary."""
     context: CodexTurnContext
     interaction: PendingInteraction
     phase: WorkflowPhase
@@ -68,6 +73,7 @@ class SessionContinuation:
 
 
 class ContinuationManager:
+    """Represent the continuation manager contract, state, or service boundary."""
     def __init__(self, plugin_data: Path, *, max_age_seconds: int) -> None:
         self._root = plugin_data / "control-plane"
         self._max_age_seconds = max_age_seconds
@@ -114,6 +120,7 @@ class ContinuationManager:
 
 
 class WorkflowCheckpointManager:
+    """Represent the workflow checkpoint manager contract, state, or service boundary."""
     def __init__(self, plugin_data: Path) -> None:
         self._root = plugin_data / "control-plane"
 

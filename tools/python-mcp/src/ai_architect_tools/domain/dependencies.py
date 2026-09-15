@@ -92,6 +92,7 @@ def _analyze_dependency_statements(
 def analyze_repository_dependencies(
     reader: SourceReader | None, request: RepositoryAnalysisInput
 ) -> DependencyGraphEvidence:
+    """Provide the analyze repository dependencies operation used by the architecture workflow."""
     if request.dependency_statements:
         return _analyze_dependency_statements(request.dependency_statements)
     if reader is None:

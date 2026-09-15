@@ -27,6 +27,7 @@ ALIASES = {
 
 
 def main() -> None:
+    """Run this module's command-line entry point."""
     entries: list[dict[str, object]] = []
     for path in sorted(REFERENCES.glob("*.md")):
         if path.name == "no-pattern.md":
