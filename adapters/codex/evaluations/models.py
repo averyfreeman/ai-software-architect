@@ -11,8 +11,19 @@ from pathlib import Path
 from typing import Annotated, Literal, Self
 
 import yaml
-from ai_architect_schemas import PatternCategory
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+PatternCategory = Literal[
+	"GoF",
+	"Architecture",
+	"Presentation",
+	"Dependency",
+	"Data",
+	"Integration",
+	"Resilience",
+	"Modernization",
+	"No pattern",
+]
 
 
 class StrictModel(BaseModel):

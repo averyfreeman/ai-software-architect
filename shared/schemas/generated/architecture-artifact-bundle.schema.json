@@ -1,7 +1,332 @@
 {
-  "$comment": "SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de); SPDX-License-Identifier: MIT",
+  "$comment": "Go-owned canonical schema; contract version 1.1.0",
   "$defs": {
     "ArchitectureContract": {
+      "$comment": "Go-owned canonical schema; contract version 1.1.0",
+      "$defs": {
+        "ArchitectureDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "assumptions": {
+              "items": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 30,
+              "type": "array"
+            },
+            "considered_option_ids": {
+              "items": {
+                "pattern": "^OPT-[0-9]{3}$",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "minItems": 1,
+              "type": "array"
+            },
+            "context": {
+              "maxLength": 20000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "decision": {
+              "maxLength": 20000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "drivers": {
+              "items": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 30,
+              "minItems": 1,
+              "type": "array"
+            },
+            "id": {
+              "pattern": "^ADR-[0-9]{3}$",
+              "type": "string"
+            },
+            "negative_consequences": {
+              "items": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 30,
+              "type": "array"
+            },
+            "positive_consequences": {
+              "items": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 30,
+              "type": "array"
+            },
+            "selected_option_id": {
+              "anyOf": [
+                {
+                  "pattern": "^OPT-[0-9]{3}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "status": {
+              "enum": [
+                "proposed",
+                "accepted",
+                "rejected",
+                "superseded"
+              ],
+              "type": "string"
+            },
+            "supersedes": {
+              "items": {
+                "pattern": "^ADR-[0-9]{3}$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            "title": {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            "validation_criteria": {
+              "items": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 30,
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "status",
+            "context",
+            "drivers",
+            "considered_option_ids",
+            "decision",
+            "validation_criteria"
+          ],
+          "type": "object"
+        },
+        "ArchitectureDecisionArtifact": {
+          "additionalProperties": false,
+          "properties": {
+            "decision": {
+              "$ref": "#/$defs/ArchitectureDecision"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "schema_version": {
+              "const": "1.1.0",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schema_version",
+            "revision",
+            "decision"
+          ],
+          "type": "object"
+        },
+        "ClarificationQuestion": {
+          "additionalProperties": false,
+          "properties": {
+            "answer": {
+              "anyOf": [
+                {
+                  "maxLength": 20000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "critical": {
+              "default": false,
+              "type": "boolean"
+            },
+            "decision_impact": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "id": {
+              "pattern": "^Q-[0-9]{3}$",
+              "type": "string"
+            },
+            "question": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "question",
+            "decision_impact"
+          ],
+          "type": "object"
+        },
+        "Component": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "type": "string"
+            },
+            "owns_data": {
+              "items": {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            "public_interfaces": {
+              "items": {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            "responsibility": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "responsibility"
+          ],
+          "type": "object"
+        },
+        "DependencyRule": {
+          "additionalProperties": false,
+          "properties": {
+            "policy": {
+              "enum": [
+                "allow",
+                "deny",
+                "allow-via-interface"
+              ],
+              "type": "string"
+            },
+            "rationale": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "source": {
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "type": "string"
+            },
+            "target": {
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "type": "string"
+            },
+            "via_interface": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "source",
+            "target",
+            "policy",
+            "rationale"
+          ],
+          "type": "object"
+        },
+        "ExternalBoundary": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "type": "string"
+            },
+            "responsibility": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "responsibility"
+          ],
+          "type": "object"
+        },
+        "QualityAttribute": {
+          "additionalProperties": false,
+          "properties": {
+            "measurable_signal": {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "name": {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            "priority": {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "rationale": {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "priority",
+            "rationale"
+          ],
+          "type": "object"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
         "architecture_style": {
@@ -14,16 +339,13 @@
             {
               "type": "null"
             }
-          ],
-          "default": null,
-          "title": "Architecture Style"
+          ]
         },
         "components": {
           "items": {
             "$ref": "#/$defs/Component"
           },
           "maxItems": 200,
-          "title": "Components",
           "type": "array"
         },
         "decision_ids": {
@@ -32,7 +354,6 @@
             "type": "string"
           },
           "maxItems": 200,
-          "title": "Decision Ids",
           "type": "array"
         },
         "dependency_rules": {
@@ -40,7 +361,6 @@
             "$ref": "#/$defs/DependencyRule"
           },
           "maxItems": 500,
-          "title": "Dependency Rules",
           "type": "array"
         },
         "external_boundaries": {
@@ -48,7 +368,6 @@
             "$ref": "#/$defs/ExternalBoundary"
           },
           "maxItems": 100,
-          "title": "External Boundaries",
           "type": "array"
         },
         "prohibited_practices": {
@@ -58,7 +377,6 @@
             "type": "string"
           },
           "maxItems": 200,
-          "title": "Prohibited Practices",
           "type": "array"
         },
         "quality_attributes": {
@@ -66,7 +384,6 @@
             "$ref": "#/$defs/QualityAttribute"
           },
           "maxItems": 20,
-          "title": "Quality Attributes",
           "type": "array"
         },
         "required_practices": {
@@ -76,23 +393,19 @@
             "type": "string"
           },
           "maxItems": 200,
-          "title": "Required Practices",
           "type": "array"
         },
         "revision": {
           "minimum": 1,
-          "title": "Revision",
           "type": "integer"
         },
         "schema_version": {
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-          "title": "Schema Version",
+          "const": "1.1.0",
           "type": "string"
         },
         "scope": {
           "maxLength": 500,
           "minLength": 1,
-          "title": "Scope",
           "type": "string"
         },
         "unresolved_questions": {
@@ -100,7 +413,6 @@
             "$ref": "#/$defs/ClarificationQuestion"
           },
           "maxItems": 50,
-          "title": "Unresolved Questions",
           "type": "array"
         }
       },
@@ -122,7 +434,6 @@
             "type": "string"
           },
           "maxItems": 30,
-          "title": "Assumptions",
           "type": "array"
         },
         "considered_option_ids": {
@@ -132,19 +443,16 @@
           },
           "maxItems": 5,
           "minItems": 1,
-          "title": "Considered Option Ids",
           "type": "array"
         },
         "context": {
           "maxLength": 20000,
           "minLength": 1,
-          "title": "Context",
           "type": "string"
         },
         "decision": {
           "maxLength": 20000,
           "minLength": 1,
-          "title": "Decision",
           "type": "string"
         },
         "drivers": {
@@ -155,12 +463,10 @@
           },
           "maxItems": 30,
           "minItems": 1,
-          "title": "Drivers",
           "type": "array"
         },
         "id": {
           "pattern": "^ADR-[0-9]{3}$",
-          "title": "Id",
           "type": "string"
         },
         "negative_consequences": {
@@ -170,7 +476,6 @@
             "type": "string"
           },
           "maxItems": 30,
-          "title": "Negative Consequences",
           "type": "array"
         },
         "positive_consequences": {
@@ -180,7 +485,6 @@
             "type": "string"
           },
           "maxItems": 30,
-          "title": "Positive Consequences",
           "type": "array"
         },
         "selected_option_id": {
@@ -192,9 +496,7 @@
             {
               "type": "null"
             }
-          ],
-          "default": null,
-          "title": "Selected Option Id"
+          ]
         },
         "status": {
           "enum": [
@@ -203,7 +505,6 @@
             "rejected",
             "superseded"
           ],
-          "title": "Status",
           "type": "string"
         },
         "supersedes": {
@@ -212,13 +513,11 @@
             "type": "string"
           },
           "maxItems": 100,
-          "title": "Supersedes",
           "type": "array"
         },
         "title": {
           "maxLength": 500,
           "minLength": 1,
-          "title": "Title",
           "type": "string"
         },
         "validation_criteria": {
@@ -229,7 +528,6 @@
           },
           "maxItems": 30,
           "minItems": 1,
-          "title": "Validation Criteria",
           "type": "array"
         }
       },
@@ -243,7 +541,6 @@
         "decision",
         "validation_criteria"
       ],
-      "title": "ArchitectureDecision",
       "type": "object"
     },
     "ArchitectureDecisionArtifact": {
@@ -254,12 +551,10 @@
         },
         "revision": {
           "minimum": 1,
-          "title": "Revision",
           "type": "integer"
         },
         "schema_version": {
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-          "title": "Schema Version",
+          "const": "1.1.0",
           "type": "string"
         }
       },
@@ -268,7 +563,6 @@
         "revision",
         "decision"
       ],
-      "title": "ArchitectureDecisionArtifact",
       "type": "object"
     },
     "ClarificationQuestion": {
@@ -284,30 +578,24 @@
             {
               "type": "null"
             }
-          ],
-          "default": null,
-          "title": "Answer"
+          ]
         },
         "critical": {
           "default": false,
-          "title": "Critical",
           "type": "boolean"
         },
         "decision_impact": {
           "maxLength": 2000,
           "minLength": 1,
-          "title": "Decision Impact",
           "type": "string"
         },
         "id": {
           "pattern": "^Q-[0-9]{3}$",
-          "title": "Id",
           "type": "string"
         },
         "question": {
           "maxLength": 2000,
           "minLength": 1,
-          "title": "Question",
           "type": "string"
         }
       },
@@ -316,7 +604,6 @@
         "question",
         "decision_impact"
       ],
-      "title": "ClarificationQuestion",
       "type": "object"
     },
     "Component": {
@@ -324,7 +611,6 @@
       "properties": {
         "id": {
           "pattern": "^[a-z][a-z0-9-]*$",
-          "title": "Id",
           "type": "string"
         },
         "owns_data": {
@@ -334,7 +620,6 @@
             "type": "string"
           },
           "maxItems": 100,
-          "title": "Owns Data",
           "type": "array"
         },
         "public_interfaces": {
@@ -344,13 +629,11 @@
             "type": "string"
           },
           "maxItems": 100,
-          "title": "Public Interfaces",
           "type": "array"
         },
         "responsibility": {
           "maxLength": 2000,
           "minLength": 1,
-          "title": "Responsibility",
           "type": "string"
         }
       },
@@ -358,36 +641,30 @@
         "id",
         "responsibility"
       ],
-      "title": "Component",
       "type": "object"
     },
     "DependencyRule": {
       "additionalProperties": false,
       "properties": {
         "policy": {
-          "description": "Use allow for a direct permitted dependency, deny for a prohibited dependency, and allow-via-interface only when via_interface names the required public interface.",
           "enum": [
             "allow",
             "deny",
             "allow-via-interface"
           ],
-          "title": "Policy",
           "type": "string"
         },
         "rationale": {
           "maxLength": 2000,
           "minLength": 1,
-          "title": "Rationale",
           "type": "string"
         },
         "source": {
           "pattern": "^[a-z][a-z0-9-]*$",
-          "title": "Source",
           "type": "string"
         },
         "target": {
           "pattern": "^[a-z][a-z0-9-]*$",
-          "title": "Target",
           "type": "string"
         },
         "via_interface": {
@@ -400,10 +677,7 @@
             {
               "type": "null"
             }
-          ],
-          "default": null,
-          "description": "Required only when policy is allow-via-interface; omit this field for allow and deny.",
-          "title": "Via Interface"
+          ]
         }
       },
       "required": [
@@ -412,7 +686,6 @@
         "policy",
         "rationale"
       ],
-      "title": "DependencyRule",
       "type": "object"
     },
     "ExternalBoundary": {
@@ -420,13 +693,11 @@
       "properties": {
         "id": {
           "pattern": "^[a-z][a-z0-9-]*$",
-          "title": "Id",
           "type": "string"
         },
         "responsibility": {
           "maxLength": 2000,
           "minLength": 1,
-          "title": "Responsibility",
           "type": "string"
         }
       },
@@ -434,7 +705,6 @@
         "id",
         "responsibility"
       ],
-      "title": "ExternalBoundary",
       "type": "object"
     },
     "QualityAttribute": {
@@ -450,26 +720,21 @@
             {
               "type": "null"
             }
-          ],
-          "default": null,
-          "title": "Measurable Signal"
+          ]
         },
         "name": {
           "maxLength": 500,
           "minLength": 1,
-          "title": "Name",
           "type": "string"
         },
         "priority": {
           "maximum": 5,
           "minimum": 1,
-          "title": "Priority",
           "type": "integer"
         },
         "rationale": {
           "maxLength": 2000,
           "minLength": 1,
-          "title": "Rationale",
           "type": "string"
         }
       },
@@ -478,17 +743,15 @@
         "priority",
         "rationale"
       ],
-      "title": "QualityAttribute",
       "type": "object"
     }
   },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "One atomically validated architecture record-and-handoff candidate.",
   "properties": {
     "coding_handoff": {
       "maxLength": 20000,
       "minLength": 1,
-      "title": "Coding Handoff",
       "type": "string"
     },
     "contract": {
@@ -500,13 +763,11 @@
       },
       "maxItems": 200,
       "minItems": 1,
-      "title": "Decisions",
       "type": "array"
     },
     "project_context": {
       "maxLength": 20000,
       "minLength": 1,
-      "title": "Project Context",
       "type": "string"
     }
   },

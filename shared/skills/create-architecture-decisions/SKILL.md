@@ -27,4 +27,4 @@ SPDX-License-Identifier: MIT
 
 - Load [ADR authoring](references/adr-authoring.md) whenever creating or superseding an ADR.
 - Use the [ADR template](assets/adr-template.md) to render a decision; remove its SPDX source header from generated output.
-- Load the [contract example](assets/architecture-contract.example.yaml) before every contract draft. It intentionally demonstrates the nested shapes and every dependency-policy variant; preserve those shapes while replacing example values, then validate the contract and complete artifact bundle against the canonical Pydantic models.
+- Load the [contract example](assets/architecture-contract.example.yaml) before every contract draft. It intentionally demonstrates the nested shapes and every dependency-policy variant; preserve those shapes while replacing example values, then validate the contract and complete artifact bundle against the canonical Go validator and generated JSON Schema.

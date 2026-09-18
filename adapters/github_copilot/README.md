@@ -12,8 +12,7 @@ adapter yet.
 ## Reuse from the canonical core
 
 The adapter should generate its workflow from `shared/skills/`, copy only routed
-references and assets, use the Pydantic contracts from `shared/schemas/`, call the
-Python domain functions in `tools/python-mcp/src/ai_architect_tools/domain/`, preserve
+references and assets, call the canonical Go domain functions under internal/architect, preserve
 the `.ai-architect/` artifact format, and run the shared Gherkin evaluations.
 
 ## Host-specific work

@@ -13,8 +13,7 @@ adapters/codex/evaluations.
 .PARAMETER ExpectedPluginVersion
 Optional release safety check. The runner detects the installed and enabled
 AI Software Architect across all marketplaces, rejects ambiguous duplicates, and
-exits before model calls if its version differs. PluginVersion remains a
-backward-compatible alias.
+exits before model calls if its version differs.
 #>
 
 [CmdletBinding()]
@@ -24,7 +23,6 @@ param(
     [string]$Model = "gpt-5.6-sol",
     [ValidateSet("standard", "fast", "unknown")]
     [string]$Speed = "standard",
-    [Alias("PluginVersion")]
     [string]$ExpectedPluginVersion,
     [ValidateSet("low", "medium", "high", "xhigh")]
     [string]$ReasoningEffort = "medium",

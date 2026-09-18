@@ -5,6 +5,21 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
+## [0.2.4] - 2026-09-18
+
+### Changed
+
+- Completed the production cutover to Go for canonical contracts, deterministic
+  validation, Codex hooks, and native plugin packaging.
+- Added Windows x86-64, macOS Apple Silicon, Linux x86-64, and Linux ARM64
+  release targets with extracted-package validation and native host test gates.
+
+### Removed
+
+- Removed the production Python MCP, schema, Codex runtime, and PyInstaller
+  compatibility layers. Development-only evaluation tooling and user-facing
+  Python examples remain outside product packaging.
+
 ## [0.2.3] - 2026-08-30
 
 ### Fixed

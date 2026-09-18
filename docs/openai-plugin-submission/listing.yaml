@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
 # SPDX-License-Identifier: MIT
 
-schema_version: 1.0.0
+schema_version: 1.1.0
 publisher:
   display_name: AUTOSOFT Engineering
   developer_identity_to_verify_and_select: XAVIER MUFFATO LTDA
@@ -15,7 +15,7 @@ publisher:
 plugin:
   name: AI Software Architect
   slug: ai-software-architect
-  version_source: .codex-plugin/plugin.json
+  version_source: VERSION
   portal_submission_type: Skills only
   package_features:
     - composite-skill
@@ -30,19 +30,15 @@ plugin:
     pattern examples, asks for approval, records validated ADRs and architecture
     artifacts, prepares coding handoffs, and performs read-only conformance reviews.
     The user's selected Codex model performs the reasoning. Transparent, short-lived
-    local hooks reinforce activation, continuation, static inspection, guarded
+    native Go hooks reinforce activation, continuation, static inspection, guarded
     artifact writing, and response validation without network calls or a persistent
-    service. The public, privacy-preserving evaluation history records more than
-    350 eligible exploratory observations across more than 140 campaigns,
-    complemented by more than 160 deterministic automated tests.
+    service. The package requires no Python, uv, PyInstaller, or first-run download.
   update_release_notes: >-
-    Update from version 0.2.2 to 0.2.3 under the AUTOSOFT Engineering brand by
-    XAVIER MUFFATO LTDA. This version explicitly declares the bundled
-    hooks/hooks.json configuration so public Codex plugin installations can
-    discover, review, and activate all five lifecycle hooks. The project-aware
-    architecture and design-pattern guidance, stored pattern examples,
-    user-approved ADR and handoff artifacts, bounded static repository review,
-    short-lived local runtime, and no-MCP design are otherwise unchanged.
+    Release the VERSION value under the AUTOSOFT Engineering brand by XAVIER
+    MUFFATO LTDA. The package declares all five lifecycle hooks, uses one native
+    runtime for the selected target, and includes project-aware architecture and
+    design-pattern guidance, user-approved ADR and handoff artifacts, bounded
+    static repository review, and no persistent service.
   countries_and_regions:
     selection: confirm-in-portal
     intended: broadly-available-where-openai-plugin-directory-is-supported

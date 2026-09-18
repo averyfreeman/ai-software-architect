@@ -1,129 +1,34 @@
-<!--
-SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
-SPDX-License-Identifier: MIT
--->
+# Native release evidence
 
-# Release Evidence: `<version>`
+Release version: VERSION
 
-Copy this file to `docs/releases/<version>.md` and replace every placeholder.
-Do not record secrets, hidden reasoning, unnecessary source content, or sensitive
-local paths.
+## Required automated evidence
 
-## Candidate Identity
+- [ ] go test ./...
+- [ ] go test -race ./...
+- [ ] go vet ./...
+- [ ] go run ./cmd/generate-schemas --check
+- [ ] native builds for windows/amd64, darwin/arm64, linux/amd64, and linux/arm64
+- [ ] Linux amd64 binary smoke test on a native Linux runner
+- [ ] package extraction and Go validator checks for every target
+- [ ] SHA-256 sidecars match the uploaded archives
 
-| Field | Value |
-|---|---|
-| Release version | `<version>` |
-| Git tag | `<tag>` |
-| Commit SHA | `<sha>` |
-| Plugin provenance hash | `<hash>` |
-| Package SHA-256 | `<hash>` |
-| Codex version | `<version>` |
-| Installed plugin version | `<version detected by the evaluation runner>` |
-| Model and reasoning effort | `gpt-5.6-sol`, medium |
-| Operating system | Windows x86-64 `<version>` |
-| Evaluator | `<name>` |
-| Evaluation date | `<YYYY-MM-DD>` |
+## Clean-machine evidence
 
-## Gate A: Deterministic Repository Validation
+- [ ] Windows x86-64 installs and launches without Python, uv, PyInstaller, or network downloads
+- [ ] macOS Apple Silicon installs and launches without Python, uv, PyInstaller, or network downloads
+- [ ] Linux binaries execute the bounded snapshot command without Python or network downloads
+- [ ] Linux Codex host lifecycle remains unadvertised until separately verified
+- [ ] Windows reparse-point fixtures pass
+- [ ] macOS path and Linux filesystem fixtures pass
 
-- [ ] `uv lock --check`
-- [ ] locked dependency synchronization
-- [ ] schema generation produced no diff
-- [ ] acceptance generation produced no diff
-- [ ] third-party notice generation produced no diff
-- [ ] Ruff
-- [ ] mypy
-- [ ] pytest
-- [ ] release-candidate build
-- [ ] plugin validation
-- [ ] packaged runtime smoke test
+## Manual workflow evidence
 
-Evidence or workflow URL: `<link or concise note>`
+- [ ] explicit selection and clarification routing
+- [ ] approval persistence and one-shot continuation
+- [ ] static inspection and source immutability
+- [ ] artifact preflight secret scanning and complete bundle validation
+- [ ] post-write verification and fail-closed failures
+- [ ] compaction checkpoint restoration
 
-## Gate B: Package Inspection
-
-- [ ] manifest and provenance versions match the candidate
-- [ ] provenance inventory and hashes validate
-- [ ] license and third-party notices are present
-- [ ] no development environment, cache, credential, or placeholder is packaged
-- [ ] fixed bundled short-lived hook-runtime command is present
-- [ ] no persistent MCP registration or startup command is packaged
-- [ ] no first-run dependency download is required
-
-Evidence: `<link or concise note>`
-
-## Gate C: Structured Plugin-Mention Smoke
-
-- exact structured mention: `[@ai-software-architect](plugin://ai-software-architect@personal)`
-- result:
-- evidence path:
-- confirmed excluded from exploratory performance ledger: [ ]
-
-## Gate D: Exploratory Fixtures
-
-Choose one path and record it completely.
-
-### Full campaign
-
-- Runner output directory:
-- `report.json` SHA-256:
-- `SUMMARY.md` reviewed:
-- All deterministic assertions passed:
-- All semantic expected and forbidden behaviors reviewed:
-
-| Fixture | Result | Expected behaviors | Forbidden behaviors | Side effects | Evidence |
-|---|---|---|---|---|---|
-| `clarify-ui-architecture` | `<pass/fail>` | `<result>` | `<result>` | `<result>` | `<link/note>` |
-| `architecture-option-comparison` | `<pass/fail>` | `<result>` | `<result>` | `<result>` | `<link/note>` |
-| `read-only-architecture-review` | `<pass/fail>` | `<result>` | `<result>` | `<result>` | `<link/note>` |
-| `abstract-factory-example` | `<pass/fail>` | `<result>` | `<result>` | `<result>` | `<link/note>` |
-| `avoid-overengineering` | `<pass/fail>` | `<result>` | `<result>` | `<result>` | `<link/note>` |
-
-Unresolved infrastructure errors: `<none or details>`
-
-### Approved waiver
-
-- [ ] candidate changed only version alignment, documentation, portal metadata, or package-discovery metadata
-- [ ] assembled package, provenance, and runtime smoke tests passed
-- [ ] no skill, hook definition/runtime behavior, contract, fixture, model prompt, or dependency changed
-- [ ] Gate C, Gate E, and Gate F completed for the exact candidate
-- Exact unchanged behavioral surface:
-- Maintainer rationale and approver:
-
-## Gate E: Codex Desktop Acceptance
-
-- [ ] exact candidate installed or updated through the Plugins window
-- [ ] current hook definitions reviewed and activated
-- [ ] displayed version matches the candidate
-- [ ] the single `$ai-software-architect` skill invokes without an `@` plugin mention
-- [ ] expected short-lived hook behavior and absence of optional MCP use confirmed
-- [ ] candidate exercised from multiple tasks
-- [ ] first-attempt uninstall succeeded while Codex remained open
-- [ ] no plugin hook-runtime process or stale installed package remained
-- [ ] reinstall succeeded and exposed the same version
-
-Lifecycle evidence: `<process observations and concise result>`
-
-## Gate F: Clean-Machine Acceptance
-
-- [ ] tested on clean Windows x86-64
-- [ ] Python and `uv` were not preinstalled requirements
-- [ ] no first-run dependency download occurred
-- [ ] main workflow succeeded
-- [ ] deterministic pre-write and post-write artifact validation succeeded
-- [ ] no network listener appeared
-- [ ] first-attempt uninstall succeeded
-
-Evidence: `<link or concise note>`
-
-## Deviations and Residual Risks
-
-`<none, or each accepted deviation with owner, justification, and follow-up>`
-
-## Release Decision
-
-- Decision: `<GO/NO-GO>`
-- Decided by: `<name>`
-- Date: `<YYYY-MM-DD>`
-- Rationale: `<concise rationale>`
+Historical release evidence is append-only and must not be rewritten to make old records look current.

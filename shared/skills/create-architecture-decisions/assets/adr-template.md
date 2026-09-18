@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 Remove this source-template notice from generated user artifacts.
 -->
 ---
-schema_version: 1.0.0
+schema_version: 1.1.0
 revision: 1
 decision:
   id: ADR-001
@@ -28,4 +28,3 @@ decision:
 # ADR-001: Replace with approved decision title
 
 Render the validated decision fields here without changing their meaning.
-

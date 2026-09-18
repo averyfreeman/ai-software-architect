@@ -19,11 +19,11 @@ jobs:
     # GitHub Free supports CodeQL code scanning only for public repositories.
     # This condition automatically enables the job when the repository is published.
     if: ${{ github.event.repository.private == false }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
-          languages: python
+          languages: go
       - uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0

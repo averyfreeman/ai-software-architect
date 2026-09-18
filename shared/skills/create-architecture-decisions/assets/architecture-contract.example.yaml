@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # Remove this source-template notice from generated user artifacts.
 
-schema_version: 1.0.0
+schema_version: 1.1.0
 revision: 1
 scope: notification-subsystem
 architecture_style: modular-monolith-with-ports-and-adapters

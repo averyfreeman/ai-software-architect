@@ -1,60 +1,99 @@
-# SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
-# SPDX-License-Identifier: MIT
-
-name: CI
+name: Go CI
 
 on:
-  pull_request:
   push:
-    branches: [main, develop]
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
-  test-and-package:
-    runs-on: windows-latest
-    timeout-minutes: 30
+  go:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          python-version: "3.13.12"
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
-        with:
-          version: "0.11.3"
-          enable-cache: false
-      - run: uv lock --check
-      - run: uv sync --locked --all-packages
-      - run: uv run python shared/schemas/generate_schema.py
-      - run: uv run python shared/evaluations/generate_acceptance.py
-      - run: uv run python tools/generate_third_party_notices.py
-      - run: git diff --exit-code
-      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests
-      - run: uv run mypy
-      - run: uv run pytest -q
-      - name: Render exploratory performance history
-        shell: pwsh
+          go-version-file: go.mod
+          cache: true
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Test
+        run: go test ./...
+      - name: Race test
+        run: go test -race ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Check generated schemas
+        run: go run ./cmd/generate-schemas --check
+      - name: Build all native runtimes
+        run: make build-all
+      - name: Smoke test Linux runtime
+        run: make smoke-linux
+      - name: Package and extract Linux plugin
+        shell: bash
         run: |
-          uv run python -m adapters.codex.evaluations.performance_report `
-            --output-directory .tmp/evaluations/performance-history `
-            --quiet
-          Get-Content .tmp/evaluations/performance-history/performance.md |
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY
-      - name: Upload exploratory performance reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          version="$(sed -n '1p' VERSION)"
+          go run ./cmd/codex-plugin package --target linux-amd64 --version "$version"
+          extract_dir="$(mktemp -d)"
+          unzip -q "dist/release/ai-software-architect-v$version-linux-amd64.zip" -d "$extract_dir"
+          go run ./cmd/codex-plugin validate --target linux-amd64 "$extract_dir"
+          "$extract_dir/runtime/linux-amd64/ai-architect-runtime/ai-architect-runtime" --repository-snapshot --root . > "$extract_dir/snapshot.json"
+          test -s "$extract_dir/snapshot.json"
+
+  cross-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-amd64
+            goos: windows
+            goarch: amd64
+            binary: ai-architect-runtime.exe
+          - target: darwin-arm64
+            goos: darwin
+            goarch: arm64
+            binary: ai-architect-runtime
+          - target: linux-amd64
+            goos: linux
+            goarch: amd64
+            binary: ai-architect-runtime
+          - target: linux-arm64
+            goos: linux
+            goarch: arm64
+            binary: ai-architect-runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          name: exploratory-performance-history
-          path: .tmp/evaluations/performance-history/
-          if-no-files-found: error
-      - run: uv run python adapters/codex/build_plugin.py --build-runtime
-      - run: uv run python adapters/codex/validate_plugin.py dist/codex/ai-software-architect
-      - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/windows-x86_64/ai-architect-runtime/ai-architect-runtime.exe
-      - name: Package installable marketplace bundle
-        shell: pwsh
-        run: |
-          $manifest = Get-Content `
-            dist/codex/ai-software-architect/.codex-plugin/plugin.json `
-            -Raw | ConvertFrom-Json
-          .\scripts\package-codex-release.ps1 `
-            -PluginVersion $manifest.version
+          go-version-file: go.mod
+          cache: true
+      - name: Cross-build ${{ matrix.target }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -trimpath -ldflags "-X main.version=$(sed -n '1p' VERSION)" -o "dist/${{ matrix.target }}/${{ matrix.binary }}" ./cmd/ai-architect-runtime
+
+  native-host-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            host: linux-amd64
+          - os: macos-14
+            host: darwin-arm64
+          - os: windows-latest
+            host: windows-amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Native filesystem and path tests (${{ matrix.host }})
+        run: go test ./internal/architect ./internal/codex

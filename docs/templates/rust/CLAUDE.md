@@ -1,0 +1,1 @@
+See `AGENTS.md` for all agent directives, project architecture, coding standards, and documentation requirements.  Additional documents live in `.agents`.

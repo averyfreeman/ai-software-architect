@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autosoft-engineering.de)
 # SPDX-License-Identifier: MIT
 
-schema_version: 1.0.0
+schema_version: 1.1.0
 positive_cases:
   - id: architecture-option-comparison
     prompt: >-

@@ -1,0 +1,30 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+const frontmatter = {
+  title: 'adr-repo-governance',
+  description: 'Git-native architecture decision records that survive the sprint.',
+  template: 'splash',
+};
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+---
+
+<StarlightPage frontmatter={frontmatter} hasSidebar={false} headings={[]}>
+  <main class="landing">
+    <p class="eyebrow">Git-native governance · Markdown records</p>
+    <h1>Keep architecture decisions <em>findable.</em></h1>
+    <p class="lede">Store decisions in version control, validate their structure, and surface the records that matter when code changes.</p>
+    <p><a class="action" href={`${base}workflow/`}>Read the workflow <span aria-hidden="true">→</span></a></p>
+    <div class="facts" aria-label="Project facts">
+      <span><strong>Go</strong> CLI</span>
+      <span><strong>Markdown</strong> source</span>
+      <span><strong>JSON</strong> automation</span>
+    </div>
+    <section class="cards" aria-label="Documentation sections">
+      <a href={`${base}workflow/`}><strong>Workflow</strong><span>Create, query, validate, and index ADRs.</span></a>
+      <a href={`${base}reference/`}><strong>Reference</strong><span>Learn the command surface and ADR model.</span></a>
+      <a href={`${base}development/`}><strong>Development</strong><span>Run checks and contribute safely.</span></a>
+    </section>
+  </main>
+</StarlightPage>

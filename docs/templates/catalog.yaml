@@ -1,0 +1,154 @@
+version: 1
+
+git:
+  branch: main
+  versioning: semver
+  initial_tag: v0.1.0
+  commit_style: conventional-commits
+  init: false
+  commit: false
+  tag: false
+  push: false
+  create_remote: false
+
+languages:
+  generic:
+    display_name: Generic
+    aliases: [text, other]
+    template: generic
+    source_extensions: []
+    build: ""
+    test: ""
+    format: ""
+    documentation: Markdown
+    ignore_patterns: [.env*, .DS_Store]
+  typescript:
+    display_name: TypeScript
+    aliases: [ts]
+    template: typescript
+    source_extensions: [.ts, .tsx]
+    build: npm run build
+    test: npm test
+    format: npx prettier --check .
+    documentation: TSDoc
+    ignore_patterns: [node_modules/, dist/, .env*]
+  javascript:
+    display_name: JavaScript
+    aliases: [js, node]
+    template: javascript
+    source_extensions: [.js, .jsx, .mjs, .cjs]
+    build: npm run build
+    test: npm test
+    format: npx prettier --check .
+    documentation: JSDoc
+    ignore_patterns: [node_modules/, dist/, .env*]
+  go:
+    display_name: Go
+    aliases: [golang]
+    template: go
+    source_extensions: [.go]
+    build: go build ./...
+    test: go test ./...
+    format: gofmt -w .
+    documentation: Go doc comments
+    ignore_patterns: [bin/, dist/, coverage.out, .env*]
+  rust:
+    display_name: Rust
+    aliases: [rs]
+    template: rust
+    source_extensions: [.rs]
+    build: cargo build
+    test: cargo test
+    format: cargo fmt --check
+    documentation: Rustdoc
+    ignore_patterns: [target/, .env*]
+  c:
+    display_name: C
+    aliases: []
+    template: c
+    source_extensions: [.c, .h]
+    build: make
+    test: make test
+    format: clang-format --dry-run --Werror .
+    documentation: Doxygen
+    ignore_patterns: [build/, bin/, .env*]
+  cpp:
+    display_name: C++
+    aliases: [cxx, c++]
+    template: cpp
+    source_extensions: [.cc, .cpp, .cxx, .hpp, .hh, .hxx]
+    build: cmake --build build
+    test: ctest --test-dir build
+    format: clang-format --dry-run --Werror .
+    documentation: Doxygen
+    ignore_patterns: [build/, bin/, .env*]
+  html:
+    display_name: HTML
+    aliases: [web]
+    template: html
+    source_extensions: [.html, .htm]
+    build: ""
+    test: ""
+    format: npx prettier --check .
+    documentation: HTML comments and Markdown
+    ignore_patterns: [dist/, .env*]
+  haskell:
+    display_name: Haskell
+    aliases: [hs]
+    template: haskell
+    source_extensions: [.hs, .lhs]
+    build: cabal build
+    test: cabal test
+    format: fourmolu --mode check .
+    documentation: Haddock
+    ignore_patterns: [.stack-work/, dist-newstyle/, .env*]
+  lisp:
+    display_name: Common Lisp
+    aliases: [common-lisp, clisp]
+    template: lisp
+    source_extensions: [.lisp, .lsp, .cl]
+    build: make
+    test: make test
+    format: lisp-indent
+    documentation: Common Lisp docstrings
+    ignore_patterns: [.fasl/, .cache/, .env*]
+  lua:
+    display_name: Lua
+    aliases: []
+    template: lua
+    source_extensions: [.lua]
+    build: luarocks make
+    test: busted
+    format: stylua --check .
+    documentation: LuaDoc
+    ignore_patterns: [.luarocks/, .env*]
+  php:
+    display_name: PHP
+    aliases: []
+    template: php
+    source_extensions: [.php]
+    build: composer install --no-interaction
+    test: vendor/bin/phpunit
+    format: vendor/bin/php-cs-fixer check
+    documentation: PHPDoc
+    ignore_patterns: [vendor/, .env*]
+  erlang:
+    display_name: Erlang
+    aliases: [erl]
+    template: erlang
+    source_extensions: [.erl, .hrl]
+    build: rebar3 compile
+    test: rebar3 eunit
+    format: rebar3 fmt --check
+    documentation: EDoc
+    ignore_patterns: [_build/, .env*]
+  elixir:
+    display_name: Elixir
+    aliases: [ex, exs]
+    template: elixir
+    source_extensions: [.ex, .exs]
+    build: mix compile
+    test: mix test
+    format: mix format --check-formatted
+    documentation: ExDoc
+    ignore_patterns: [_build/, deps/, .env*]
