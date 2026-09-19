@@ -66,7 +66,7 @@ func validateExecutableGitPlan(plan GitPlan) error {
 	if plan.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("unsupported Git plan schema_version %q", plan.SchemaVersion)
 	}
-	if len(plan.Command) == 0 || plan.Command[0] != "git" {
+	if len(plan.Command) == 0 || (plan.Command[0] != "git" && plan.Command[0] != "gh") {
 		return fmt.Errorf("Git plan has no safe command")
 	}
 	for _, argument := range plan.Command[1:] {
@@ -85,6 +85,9 @@ func validateExecutableGitPlan(plan GitPlan) error {
 			return fmt.Errorf("Git branch plan has an invalid command")
 		}
 	case GitActionRemote:
+		if plan.Command[0] == "gh" {
+			return validateRemoteProvisionCommand(plan.Command)
+		}
 		if len(plan.Command) != 5 || plan.Command[1] != "remote" || plan.Command[2] != "add" || !safeGitRef(plan.Command[3]) || !safeGitRemoteURL(plan.Command[4]) {
 			return fmt.Errorf("Git remote plan has an invalid command")
 		}

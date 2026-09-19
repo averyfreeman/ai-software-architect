@@ -391,6 +391,7 @@ func runGithabits(args []string) error {
 func runGithabitsPlan(args []string) error {
 	fs := flag.NewFlagSet("githabits plan", flag.ContinueOnError)
 	action := fs.String("action", "", "Git action to preview")
+	provisionRemote := fs.Bool("provision-remote", false, "plan approval-gated GitHub remote creation")
 	branch := fs.String("branch", "", "branch override")
 	message := fs.String("message", "", "commit message")
 	tag := fs.String("tag", "", "tag name")
@@ -414,13 +415,22 @@ func runGithabitsPlan(args []string) error {
 	if err != nil {
 		return err
 	}
-	plan, err := gitbbq.PlanGitAction(config, gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action))), gitbbq.GitPlanRequest{
-		Branch:       *branch,
-		Message:      *message,
-		Tag:          *tag,
-		Paths:        paths,
-		ExistingTags: existingTags,
-	})
+	requestedAction := gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action)))
+	var plan gitbbq.GitPlan
+	if *provisionRemote {
+		if requestedAction != gitbbq.GitActionRemote {
+			return errors.New("--provision-remote requires --action remote")
+		}
+		plan, err = gitbbq.PlanRemoteProvision(config)
+	} else {
+		plan, err = gitbbq.PlanGitAction(config, requestedAction, gitbbq.GitPlanRequest{
+			Branch:       *branch,
+			Message:      *message,
+			Tag:          *tag,
+			Paths:        paths,
+			ExistingTags: existingTags,
+		})
+	}
 	if err != nil {
 		return err
 	}
@@ -430,6 +440,7 @@ func runGithabitsPlan(args []string) error {
 func runGithabitsExecute(args []string) error {
 	fs := flag.NewFlagSet("githabits execute", flag.ContinueOnError)
 	action := fs.String("action", "", "Git action to execute")
+	provisionRemote := fs.Bool("provision-remote", false, "execute approval-gated GitHub remote creation")
 	branch := fs.String("branch", "", "branch override")
 	message := fs.String("message", "", "commit message")
 	tag := fs.String("tag", "", "tag name")
@@ -457,23 +468,43 @@ func runGithabitsExecute(args []string) error {
 	if err != nil {
 		return err
 	}
-	plan, err := gitbbq.PlanGitAction(config, gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action))), gitbbq.GitPlanRequest{
-		Branch:       *branch,
-		Message:      *message,
-		Tag:          *tag,
-		Paths:        paths,
-		ExistingTags: existingTags,
-	})
+	requestedAction := gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action)))
+	var plan gitbbq.GitPlan
+	if *provisionRemote {
+		if requestedAction != gitbbq.GitActionRemote {
+			return errors.New("--provision-remote requires --action remote")
+		}
+		plan, err = gitbbq.PlanRemoteProvision(config)
+	} else {
+		plan, err = gitbbq.PlanGitAction(config, requestedAction, gitbbq.GitPlanRequest{
+			Branch:       *branch,
+			Message:      *message,
+			Tag:          *tag,
+			Paths:        paths,
+			ExistingTags: existingTags,
+		})
+	}
 	if err != nil {
 		return err
 	}
-	execution, err := gitbbq.ExecuteGitPlan(config, root, plan, *approve, gitbbq.OSGitRunner{})
+	var runner gitbbq.GitRunner = gitbbq.OSGitRunner{}
+	if len(plan.Command) > 0 && plan.Command[0] == "gh" {
+		runner = gitbbq.OSGHRunner{}
+	}
+	execution, err := gitbbq.ExecuteGitPlan(config, root, plan, *approve, runner)
 	if err != nil {
 		return err
 	}
 	if plan.Action == gitbbq.GitActionRemote {
-		if _, err := gitbbq.MarkRemoteConfigured(root); err != nil {
-			return err
+		var stateErr error
+		if *provisionRemote {
+			remoteURL := fmt.Sprintf("https://github.com/%s/%s.git", strings.TrimSpace(config.Remote.Owner), strings.TrimSpace(config.Remote.Name))
+			_, stateErr = gitbbq.MarkRemoteConfiguredWithURL(root, remoteURL)
+		} else {
+			_, stateErr = gitbbq.MarkRemoteConfigured(root)
+		}
+		if stateErr != nil {
+			return stateErr
 		}
 	}
 	return output(execution, selectedFormat(*format, *jsonOutput))

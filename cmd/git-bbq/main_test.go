@@ -66,3 +66,24 @@ func TestRunGithabitsPlanRejectsOlderObservedTag(t *testing.T) {
 		t.Fatalf("older observed tag error = %v", err)
 	}
 }
+
+func TestRunGithabitsPlanBuildsRemoteProvisionPlan(t *testing.T) {
+	root := t.TempDir()
+	config, err := gitbbq.GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Remote.Owner = "averyfreeman"
+	config.Remote.Name = "example-project"
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, gitbbq.GitHabitsFilename), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runGithabitsPlan([]string{"--action", "remote", "--provision-remote", root, "--json"}); err != nil {
+		t.Fatal(err)
+	}
+}

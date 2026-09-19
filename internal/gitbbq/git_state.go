@@ -1,9 +1,21 @@
 package gitbbq
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // MarkRemoteConfigured persists the verified remote state after remote setup succeeds.
 func MarkRemoteConfigured(root string) (GitHabits, error) {
+	return markRemoteConfigured(root, "")
+}
+
+// MarkRemoteConfiguredWithURL persists a provider-derived URL after remote setup succeeds.
+func MarkRemoteConfiguredWithURL(root, remoteURL string) (GitHabits, error) {
+	return markRemoteConfigured(root, strings.TrimSpace(remoteURL))
+}
+
+func markRemoteConfigured(root, remoteURL string) (GitHabits, error) {
 	config, err := ReadGitHabits(root)
 	if err != nil {
 		return GitHabits{}, err
@@ -13,6 +25,9 @@ func MarkRemoteConfigured(root string) (GitHabits, error) {
 	}
 	if config.Remote.Status != "pending" {
 		return GitHabits{}, fmt.Errorf("remote status %q cannot be marked configured", config.Remote.Status)
+	}
+	if remoteURL != "" {
+		config.Remote.URL = remoteURL
 	}
 	if !safeGitRemoteURL(config.Remote.URL) {
 		return GitHabits{}, fmt.Errorf("configured remote requires a safe URL")

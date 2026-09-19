@@ -58,12 +58,14 @@ git-bbq githabits plan --action stage --path docs/adr/0001-use-matt-adrs.md --js
 git-bbq githabits plan --action init --json
 git-bbq githabits plan --action branch --branch feature/git-bbq --json
 git-bbq githabits plan --action remote --json
+git-bbq githabits plan --action remote --provision-remote --json
 git-bbq githabits plan --action commit --message "feat: record architecture decision" --json
 git-bbq githabits plan --action tag --tag v0.1.1 --existing-tag v0.1.0 --json
 git-bbq githabits plan --action push --branch main --json
 git-bbq githabits execute --approve --action init --json
 git-bbq githabits execute --approve --action branch --branch feature/git-bbq --json
 git-bbq githabits execute --approve --action remote --json
+git-bbq githabits execute --approve --action remote --provision-remote --json
 git-bbq githabits execute --approve --action commit --message "feat: record architecture decision" --json
 git-bbq githabits execute --approve --action tag --tag v0.1.1 --existing-tag v0.1.0 --json
 git-bbq githabits execute --approve --action push --branch main --json
@@ -83,6 +85,8 @@ messages without a recognized commit type. SemVer profiles require tags in the
 `vMAJOR.MINOR.PATCH` form, with optional prerelease and build metadata.
 Agents can pass repeated `--existing-tag` values from their read-only tag
 inventory; planning rejects duplicate or older release tags.
+`--provision-remote` is a separate approval-gated GitHub CLI plan using
+`gh repo create --source . --remote <alias>`; it never includes `--push`.
 
 ## Codex integration
 

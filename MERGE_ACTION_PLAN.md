@@ -1,6 +1,6 @@
 # Merge action plan: agent-first architecture scaffold
 
-Status: Git BBQ lifecycle slices 1–9 are published through `git-bbq-v0.1.8`;
+Status: Git BBQ lifecycle slices 1–10 are published through `git-bbq-v0.1.9`;
 the staged Go migration remains in progress. The roadmap has a fixed 17-slice
 denominator: completed work reduces the remaining count; it never adds a new
 slice merely because implementation details become visible.
@@ -26,21 +26,21 @@ so it is retired. The active ledger is:
 | GBBQ-07 | End-to-end approved push verification | Complete: `git-bbq-v0.1.6` |
 | GBBQ-08 | SemVer policy and annotated-tag execution | Complete: `git-bbq-v0.1.7` |
 | GBBQ-09 | Release progression and observed-tag protection | Complete: `git-bbq-v0.1.8` |
+| GBBQ-10 | Approval-gated GitHub provider provisioning | Complete: `git-bbq-v0.1.9` |
 
-The next active slice is `M-10`, explicit provider provisioning through an
-approval-gated `gh repo create` adapter. It is already counted below.
+The next active slice is `M-11`, remaining Python deterministic domains and
+Codex hook/control-plane parity. It is already counted below.
 
-Eight concrete slices remain after `GBBQ-09`. This count is the fixed remainder
+Seven concrete slices remain after `GBBQ-10`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
 
-1. `M-10` Explicit provider provisioning through an approval-gated `gh repo create` adapter.
-2. `M-11` Remaining Python deterministic domains and Codex hook/control-plane parity.
-3. `M-12` Fixture parity for contracts, protected paths, Windows behavior, and hook protocol.
-4. `M-13` Go-based Codex packaging, release, notices, and clean-machine install tests.
-5. `M-14` Remaining legacy scaffold language profiles and migration command.
-6. `M-15` Exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
-7. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
-8. `M-17` Python runtime retirement after every preceding gate passes.
+1. `M-11` Remaining Python deterministic domains and Codex hook/control-plane parity.
+2. `M-12` Fixture parity for contracts, protected paths, Windows behavior, and hook protocol.
+3. `M-13` Go-based Codex packaging, release, notices, and clean-machine install tests.
+4. `M-14` Remaining legacy scaffold language profiles and migration command.
+5. `M-15` Exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
+6. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
+7. `M-17` Python runtime retirement after every preceding gate passes.
 
 ## Outcome implemented in this slice
 

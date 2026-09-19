@@ -21,6 +21,7 @@ Preview one action before asking the host to approve it:
 git-bbq githabits plan --action init --json
 git-bbq githabits plan --action branch --branch feature/git-bbq --json
 git-bbq githabits plan --action remote --json
+git-bbq githabits plan --action remote --provision-remote --json
 git-bbq githabits plan --action stage --path path/to/reviewed-file --json
 git-bbq githabits plan --action commit --message "feat: explain the change" --json
 git-bbq githabits plan --action tag --tag v0.1.1 --existing-tag v0.1.0 --json

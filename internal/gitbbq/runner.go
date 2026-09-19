@@ -18,7 +18,23 @@ func (runner OSGitRunner) Run(workspace string, command []string) (GitRunResult,
 	if len(command) == 0 || command[0] != "git" {
 		return GitRunResult{}, fmt.Errorf("Git runner accepts only git commands")
 	}
-	timeout := runner.Timeout
+	return runOSCommand(workspace, command, runner.Timeout)
+}
+
+// OSGHRunner is the production adapter for approved GitHub CLI commands.
+type OSGHRunner struct {
+	Timeout time.Duration
+}
+
+func (runner OSGHRunner) Run(workspace string, command []string) (GitRunResult, error) {
+	if len(command) == 0 || command[0] != "gh" {
+		return GitRunResult{}, fmt.Errorf("gh runner accepts only gh commands")
+	}
+	return runOSCommand(workspace, command, runner.Timeout)
+}
+
+func runOSCommand(workspace string, command []string, configuredTimeout time.Duration) (GitRunResult, error) {
+	timeout := configuredTimeout
 	if timeout <= 0 {
 		timeout = 2 * time.Minute
 	}
