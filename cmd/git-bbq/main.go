@@ -465,6 +465,11 @@ func runGithabitsExecute(args []string) error {
 	if err != nil {
 		return err
 	}
+	if plan.Action == gitbbq.GitActionRemote {
+		if _, err := gitbbq.MarkRemoteConfigured(root); err != nil {
+			return err
+		}
+	}
 	return output(execution, selectedFormat(*format, *jsonOutput))
 }
 

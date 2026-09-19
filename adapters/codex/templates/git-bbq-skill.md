@@ -30,7 +30,8 @@ git-bbq githabits plan --action push --branch main --json
 The planner is read-only. Use its argument-separated command only after the
 Codex host has granted explicit approval; a pending remote intentionally blocks
 push planning. When `remote.url` is present and the remote is still pending, the
-remote action is limited to `git remote add`. To perform one approved action, pass the same inputs to
+remote action is limited to `git remote add`; successful approved execution
+persists `remote.status: configured`. To perform one approved action, pass the same inputs to
 `git-bbq githabits execute --approve`; the executor invokes Git without a shell,
 rejects force flags, and applies a bounded timeout.
 

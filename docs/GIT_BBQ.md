@@ -72,8 +72,9 @@ authorizes the action. They never execute Git, and every plan still requires
 host-level approval. `execute --approve` revalidates the plan, invokes Git without
 a shell, applies a bounded timeout, and rejects tampered commands and force
 flags. Remote planning reads `remote.alias` and `remote.url` from a pending
-`.githabits.yaml` configuration and emits only `git remote add`; verify the
-result before marking the remote `configured`. Push planning emits a command only
+`.githabits.yaml` configuration and emits only `git remote add`. After that
+approved command succeeds, the CLI persists `remote.status: configured`; a
+failed command leaves the status pending. Push planning emits a command only
 after the project remote is explicitly marked `configured`; staging rejects
 absolute and parent-traversal paths, and conventional-commit profiles reject
 messages without a recognized commit type.
