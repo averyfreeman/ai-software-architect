@@ -2,6 +2,7 @@ package gitbbq
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -57,6 +58,15 @@ func PlanGitAction(config GitHabits, action GitAction, request GitPlanRequest) (
 			return GitPlan{}, fmt.Errorf("branch is not a safe Git ref: %q", branch)
 		}
 		plan.Command = []string{"git", "switch", "-c", branch}
+	case GitActionRemote:
+		if config.Remote.Status != "pending" {
+			return GitPlan{}, fmt.Errorf("remote planning requires a pending remote")
+		}
+		remoteURL := strings.TrimSpace(config.Remote.URL)
+		if !safeGitRemoteURL(remoteURL) {
+			return GitPlan{}, fmt.Errorf("remote URL is empty or unsafe")
+		}
+		plan.Command = []string{"git", "remote", "add", config.Remote.Alias, remoteURL}
 	case GitActionStage:
 		if len(request.Paths) == 0 {
 			return GitPlan{}, fmt.Errorf("stage planning requires at least one path")
@@ -125,4 +135,13 @@ func safeGitPath(value string) bool {
 		}
 	}
 	return !strings.Contains(value, "..\\") && !strings.Contains(value, "../")
+}
+
+func safeGitRemoteURL(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" || strings.HasPrefix(value, "-") || strings.ContainsAny(value, " \t\x00\r\n") {
+		return false
+	}
+	parsed, err := url.Parse(value)
+	return err != nil || parsed.User == nil
 }

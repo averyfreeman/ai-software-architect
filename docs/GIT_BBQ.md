@@ -57,11 +57,13 @@ step:
 git-bbq githabits plan --action stage --path docs/adr/0001-use-matt-adrs.md --json
 git-bbq githabits plan --action init --json
 git-bbq githabits plan --action branch --branch feature/git-bbq --json
+git-bbq githabits plan --action remote --json
 git-bbq githabits plan --action commit --message "feat: record architecture decision" --json
 git-bbq githabits plan --action tag --tag v0.1.1 --json
 git-bbq githabits plan --action push --branch main --json
 git-bbq githabits execute --approve --action init --json
 git-bbq githabits execute --approve --action branch --branch feature/git-bbq --json
+git-bbq githabits execute --approve --action remote --json
 git-bbq githabits execute --approve --action commit --message "feat: record architecture decision" --json
 ```
 
@@ -69,9 +71,12 @@ Plans render argument-separated Git commands and report whether `.githabits.yaml
 authorizes the action. They never execute Git, and every plan still requires
 host-level approval. `execute --approve` revalidates the plan, invokes Git without
 a shell, applies a bounded timeout, and rejects tampered commands and force
-flags. Push planning emits a command only after the project remote is explicitly
-marked `configured`; staging rejects absolute and parent-traversal paths, and
-conventional-commit profiles reject messages without a recognized commit type.
+flags. Remote planning reads `remote.alias` and `remote.url` from a pending
+`.githabits.yaml` configuration and emits only `git remote add`; verify the
+result before marking the remote `configured`. Push planning emits a command only
+after the project remote is explicitly marked `configured`; staging rejects
+absolute and parent-traversal paths, and conventional-commit profiles reject
+messages without a recognized commit type.
 
 ## Codex integration
 

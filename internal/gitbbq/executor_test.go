@@ -177,3 +177,36 @@ func TestExecuteGitPlanCreatesBranch(t *testing.T) {
 		t.Fatalf("current branch = %q", got)
 	}
 }
+
+func TestExecuteGitPlanAddsPendingRemote(t *testing.T) {
+	workspace := t.TempDir()
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Remote.URL = "https://github.com/example/project.git"
+	runner := OSGitRunner{Timeout: time.Second}
+
+	initPlan, err := PlanGitAction(config, GitActionInit, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, initPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	remotePlan, err := PlanGitAction(config, GitActionRemote, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, remotePlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+
+	remote, err := exec.Command("git", "-C", workspace, "remote", "get-url", "origin").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(remote); got != "https://github.com/example/project.git\n" {
+		t.Fatalf("remote URL = %q", got)
+	}
+}

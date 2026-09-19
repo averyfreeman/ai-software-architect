@@ -160,3 +160,34 @@ func TestPlanGitActionBuildsBranchCreationCommand(t *testing.T) {
 		t.Fatalf("command = %#v, want %#v", plan.Command, want)
 	}
 }
+
+func TestPlanGitActionBuildsRemoteAddCommandForPendingRemote(t *testing.T) {
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Remote.URL = "https://github.com/example/project.git"
+
+	plan, err := PlanGitAction(config, GitActionRemote, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Allowed {
+		t.Fatalf("remote was not allowed: %#v", plan)
+	}
+	if want := []string{"git", "remote", "add", "origin", "https://github.com/example/project.git"}; !reflect.DeepEqual(plan.Command, want) {
+		t.Fatalf("command = %#v, want %#v", plan.Command, want)
+	}
+}
+
+func TestPlanGitActionRejectsCredentialBearingRemoteURL(t *testing.T) {
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Remote.URL = "https://token:secret@example.com/project.git"
+
+	if _, err := PlanGitAction(config, GitActionRemote, GitPlanRequest{}); err == nil {
+		t.Fatal("credential-bearing remote URL was accepted")
+	}
+}

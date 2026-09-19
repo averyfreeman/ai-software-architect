@@ -20,6 +20,7 @@ Preview one action before asking the host to approve it:
 ```sh
 git-bbq githabits plan --action init --json
 git-bbq githabits plan --action branch --branch feature/git-bbq --json
+git-bbq githabits plan --action remote --json
 git-bbq githabits plan --action stage --path path/to/reviewed-file --json
 git-bbq githabits plan --action commit --message "feat: explain the change" --json
 git-bbq githabits plan --action tag --tag v0.1.1 --json
@@ -28,7 +29,8 @@ git-bbq githabits plan --action push --branch main --json
 
 The planner is read-only. Use its argument-separated command only after the
 Codex host has granted explicit approval; a pending remote intentionally blocks
-push planning. To perform one approved action, pass the same inputs to
+push planning. When `remote.url` is present and the remote is still pending, the
+remote action is limited to `git remote add`. To perform one approved action, pass the same inputs to
 `git-bbq githabits execute --approve`; the executor invokes Git without a shell,
 rejects force flags, and applies a bounded timeout.
 
