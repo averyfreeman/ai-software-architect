@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/averyfreeman/git-bbq/internal/architect"
 )
 
 func TestAssessMigrationIsReadOnlyAndMapsLegacyFiles(t *testing.T) {
@@ -55,6 +57,52 @@ func TestAssessMigrationReportsMissingLegacyScaffold(t *testing.T) {
 	}
 	if assessment.Detected || len(assessment.Legacy) != 0 {
 		t.Fatalf("unexpected legacy detection: %#v", assessment)
+	}
+}
+
+func TestMigrateConvertsValidatedADRsAndPreservesLegacyFiles(t *testing.T) {
+	root := t.TempDir()
+	answers := architect.SetupAnswer{
+		Language:        "go",
+		WhyBuilding:     "Keep architecture decisions durable.",
+		Problem:         "Important decisions otherwise disappear.",
+		Audience:        "Agents and maintainers.",
+		Alternatives:    "Tickets and chat history.",
+		WhyThisSolution: "A local record is reviewable beside the code.",
+	}
+	if _, err := architect.SetupProject(root, answers, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := architect.NewDecision(root, "Use a local ADR record", "accepted"); err != nil {
+		t.Fatal(err)
+	}
+	legacyADR, err := filepath.Glob(filepath.Join(root, ".ai-architect", "decisions", "ADR-001-*.md"))
+	if err != nil || len(legacyADR) != 1 {
+		t.Fatalf("legacy ADRs = %#v, err = %v", legacyADR, err)
+	}
+
+	result, err := Migrate(root, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.MigratedADRs != 1 {
+		t.Fatalf("migration result = %#v", result)
+	}
+	if _, err := os.Stat(legacyADR[0]); err != nil {
+		t.Fatalf("legacy ADR was not preserved: %v", err)
+	}
+	targetADR, err := filepath.Glob(filepath.Join(root, ADRDirectory, "0001-use-a-local-adr-record.md"))
+	if err != nil || len(targetADR) != 1 {
+		t.Fatalf("target ADRs = %#v, err = %v", targetADR, err)
+	}
+	if _, err := ParseADR(targetADR[0]); err != nil {
+		t.Fatalf("migrated ADR is invalid: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".gitbbq", "migration", "legacy", GitHabitsFilename)); err != nil {
+		t.Fatalf("legacy Git habits archive missing: %v", err)
+	}
+	if err := ValidateProject(root); err != nil {
+		t.Fatalf("migrated project is invalid: %v", err)
 	}
 }
 

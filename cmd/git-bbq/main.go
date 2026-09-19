@@ -77,7 +77,7 @@ Usage:
   git-bbq init [path] --problem TEXT --language go[,python] [--here] [--bootstrap] [--profile guided]
   git-bbq assess [path] [--json]
   git-bbq apply [path] --approve --problem TEXT --language go[,python] [-i]
-  git-bbq migrate [path] [--json]
+  git-bbq migrate [path] [--approve] [--force] [--json]
   git-bbq adr new [path] --title TITLE --context TEXT --decision TEXT --why TEXT
   git-bbq adr index [path]
   git-bbq validate [path]
@@ -274,12 +274,24 @@ func runMigrate(args []string) error {
 	fs := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	format := fs.String("format", "text", "output format (text|json)")
 	jsonOutput := fs.Bool("json", false, "emit JSON")
+	approve := fs.Bool("approve", false, "approve the reviewed migration assessment")
+	force := fs.Bool("force", false, "archive and replace an incompatible legacy Git habits file")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	if *force && !*approve {
+		return errors.New("migrate --force requires --approve")
 	}
 	root := "."
 	if fs.NArg() > 0 {
 		root = fs.Arg(0)
+	}
+	if *approve {
+		result, err := gitbbq.Migrate(root, *force)
+		if err != nil {
+			return err
+		}
+		return output(result, selectedFormat(*format, *jsonOutput))
 	}
 	assessment, err := gitbbq.AssessMigration(root)
 	if err != nil {

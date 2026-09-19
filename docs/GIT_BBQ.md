@@ -41,9 +41,12 @@ rechecks the repository before writing. Existing files are preserved unless
 `--force` is explicitly supplied.
 
 For a legacy `ai-architect` project, run `git-bbq migrate [path] --json` first.
-This command is read-only: it inventories `.ai-architect` artifacts, proposed
-Matt-native targets, conflicts, and the explicit-approval boundary. It does not
-delete or rewrite the legacy scaffold.
+This command is read-only by default: it inventories `.ai-architect` artifacts,
+proposed Matt-native targets, conflicts, and the explicit-approval boundary.
+`git-bbq migrate [path] --approve --json` applies an additive migration, keeps
+`.ai-architect/`, converts validated ADRs under `docs/adr/`, and archives an
+incompatible legacy `.githabits.yaml` before replacing it. `--force` is required
+for that legacy-config replacement.
 
 Language selection is explicit. Supported profiles are Go, Python, TypeScript,
 JavaScript, Rust, Java, and C#. Git profile selection is also explicit: `manual` and

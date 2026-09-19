@@ -97,3 +97,28 @@ func TestRunMigrateReportsReadOnlyAssessment(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRunMigrateAppliesOnlyWithApproval(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".adr-scaffold.yaml"), []byte("version: 1\nlanguage: go\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, ".ai-architect"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".ai-architect", "project-context.md"), []byte("---\nlanguage: go\nmotivation:\n  problem: Keep migration explicit.\n---\n\n# Context\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, gitbbq.GitHabitsFilename), []byte("version: 1\nbranch: main\nversioning: semver\ninitial_tag: v0.1.0\ncommit_style: conventional-commits\ninit: false\ncommit: false\ntag: false\npush: false\ncreate_remote: false\nremote:\n  visibility: private\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runMigrate([]string{"--approve", "--force", "--json", root}); err != nil {
+		t.Fatal(err)
+	}
+	if err := gitbbq.ValidateProject(root); err != nil {
+		t.Fatalf("approved migration produced invalid project: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".gitbbq", "migration", "legacy", gitbbq.GitHabitsFilename)); err != nil {
+		t.Fatalf("legacy Git habits archive missing: %v", err)
+	}
+}
