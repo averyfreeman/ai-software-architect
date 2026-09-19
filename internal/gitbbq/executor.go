@@ -76,6 +76,14 @@ func validateExecutableGitPlan(plan GitPlan) error {
 	}
 
 	switch plan.Action {
+	case GitActionInit:
+		if len(plan.Command) != 2 || plan.Command[1] != "init" {
+			return fmt.Errorf("Git init plan has an invalid command")
+		}
+	case GitActionBranch:
+		if len(plan.Command) != 4 || plan.Command[1] != "switch" || plan.Command[2] != "-c" || !safeGitRef(plan.Command[3]) {
+			return fmt.Errorf("Git branch plan has an invalid command")
+		}
 	case GitActionStage:
 		if len(plan.Command) < 4 || plan.Command[1] != "add" || plan.Command[2] != "--" {
 			return fmt.Errorf("Git stage plan has an invalid command")

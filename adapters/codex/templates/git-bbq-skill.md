@@ -18,6 +18,8 @@ validation or user approval.
 Preview one action before asking the host to approve it:
 
 ```sh
+git-bbq githabits plan --action init --json
+git-bbq githabits plan --action branch --branch feature/git-bbq --json
 git-bbq githabits plan --action stage --path path/to/reviewed-file --json
 git-bbq githabits plan --action commit --message "feat: explain the change" --json
 git-bbq githabits plan --action tag --tag v0.1.1 --json

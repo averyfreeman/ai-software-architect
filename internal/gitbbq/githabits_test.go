@@ -124,3 +124,39 @@ func TestPlanGitActionDoesNotExposeCommandWhenPolicyDeniesAction(t *testing.T) {
 		t.Fatalf("denied plan exposed an executable command: %#v", plan)
 	}
 }
+
+func TestPlanGitActionBuildsRepositoryInitCommand(t *testing.T) {
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	plan, err := PlanGitAction(config, GitActionInit, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Allowed {
+		t.Fatalf("init was not allowed: %#v", plan)
+	}
+	if want := []string{"git", "init"}; !reflect.DeepEqual(plan.Command, want) {
+		t.Fatalf("command = %#v, want %#v", plan.Command, want)
+	}
+}
+
+func TestPlanGitActionBuildsBranchCreationCommand(t *testing.T) {
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	plan, err := PlanGitAction(config, GitActionBranch, GitPlanRequest{Branch: "feature/git-bbq"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Allowed {
+		t.Fatalf("branch was not allowed: %#v", plan)
+	}
+	if want := []string{"git", "switch", "-c", "feature/git-bbq"}; !reflect.DeepEqual(plan.Command, want) {
+		t.Fatalf("command = %#v, want %#v", plan.Command, want)
+	}
+}

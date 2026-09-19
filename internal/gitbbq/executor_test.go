@@ -2,6 +2,7 @@ package gitbbq
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -121,5 +122,58 @@ func TestOSGitRunnerRunsGitInWorkspace(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(workspace, ".git")); err != nil {
 		t.Fatalf("git repository was not initialized: %v", err)
+	}
+}
+
+func TestExecuteGitPlanInitializesRepository(t *testing.T) {
+	workspace := t.TempDir()
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := PlanGitAction(config, GitActionInit, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	execution, err := ExecuteGitPlan(config, workspace, plan, true, OSGitRunner{Timeout: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !execution.Executed {
+		t.Fatal("init plan did not execute")
+	}
+	if _, err := os.Stat(filepath.Join(workspace, ".git")); err != nil {
+		t.Fatalf("git repository was not initialized: %v", err)
+	}
+}
+
+func TestExecuteGitPlanCreatesBranch(t *testing.T) {
+	workspace := t.TempDir()
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	initPlan, err := PlanGitAction(config, GitActionInit, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, initPlan, true, OSGitRunner{Timeout: time.Second}); err != nil {
+		t.Fatal(err)
+	}
+	branchPlan, err := PlanGitAction(config, GitActionBranch, GitPlanRequest{Branch: "feature/git-bbq"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, branchPlan, true, OSGitRunner{Timeout: time.Second}); err != nil {
+		t.Fatal(err)
+	}
+
+	branch, err := exec.Command("git", "-C", workspace, "branch", "--show-current").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(branch); got != "feature/git-bbq\n" {
+		t.Fatalf("current branch = %q", got)
 	}
 }

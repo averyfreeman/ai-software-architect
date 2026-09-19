@@ -55,9 +55,13 @@ step:
 
 ```sh
 git-bbq githabits plan --action stage --path docs/adr/0001-use-matt-adrs.md --json
+git-bbq githabits plan --action init --json
+git-bbq githabits plan --action branch --branch feature/git-bbq --json
 git-bbq githabits plan --action commit --message "feat: record architecture decision" --json
 git-bbq githabits plan --action tag --tag v0.1.1 --json
 git-bbq githabits plan --action push --branch main --json
+git-bbq githabits execute --approve --action init --json
+git-bbq githabits execute --approve --action branch --branch feature/git-bbq --json
 git-bbq githabits execute --approve --action commit --message "feat: record architecture decision" --json
 ```
 

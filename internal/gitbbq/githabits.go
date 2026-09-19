@@ -46,6 +46,17 @@ func PlanGitAction(config GitHabits, action GitAction, request GitPlanRequest) (
 	}
 
 	switch action {
+	case GitActionInit:
+		plan.Command = []string{"git", "init"}
+	case GitActionBranch:
+		branch := strings.TrimSpace(request.Branch)
+		if branch == "" {
+			branch = config.Branch
+		}
+		if !safeGitRef(branch) {
+			return GitPlan{}, fmt.Errorf("branch is not a safe Git ref: %q", branch)
+		}
+		plan.Command = []string{"git", "switch", "-c", branch}
 	case GitActionStage:
 		if len(request.Paths) == 0 {
 			return GitPlan{}, fmt.Errorf("stage planning requires at least one path")
