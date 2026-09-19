@@ -35,6 +35,12 @@ var languageProfiles = map[string]languageProfile{
 	"rust": {
 		Name: "rust", DisplayName: "Rust", Aliases: []string{"rs"}, Build: "cargo build", Test: "cargo test", Format: "cargo fmt", Documentation: "rustdoc",
 	},
+	"java": {
+		Name: "java", DisplayName: "Java", Aliases: []string{"jvm"}, Build: "mvn package", Test: "mvn test", Format: "mvn spotless:apply", Documentation: "Javadoc",
+	},
+	"csharp": {
+		Name: "csharp", DisplayName: "C#", Aliases: []string{"c#", "cs", "dotnet"}, Build: "dotnet build", Test: "dotnet test", Format: "dotnet format", Documentation: "XML documentation comments",
+	},
 }
 
 var defaultFeatureValues = map[string]bool{
@@ -114,7 +120,7 @@ func resolveLanguage(name string, root string) (string, languageProfile, error) 
 			}
 		}
 	}
-	return "", languageProfile{}, fmt.Errorf("unsupported language %q; choose auto, go, typescript, python, rust, or generic", name)
+	return "", languageProfile{}, fmt.Errorf("unsupported language %q; choose auto, go, typescript, python, rust, java, csharp, or generic", name)
 }
 
 func detectLanguage(root string) string {
@@ -127,10 +133,20 @@ func detectLanguage(root string) string {
 		{name: "typescript", files: []string{"package.json", "tsconfig.json"}, ext: ".ts"},
 		{name: "python", files: []string{"pyproject.toml", "requirements.txt"}, ext: ".py"},
 		{name: "rust", files: []string{"Cargo.toml", "Cargo.lock"}, ext: ".rs"},
+		{name: "java", files: []string{"pom.xml", "build.gradle", "build.gradle.kts"}, ext: ".java"},
+		{name: "csharp", files: []string{"*.csproj", "*.sln"}, ext: ".cs"},
 	}
 	for _, check := range checks {
 		for _, file := range check.files {
-			if _, err := os.Stat(filepath.Join(root, file)); err == nil {
+			candidate := filepath.Join(root, file)
+			if strings.ContainsAny(file, "*?[") {
+				matches, err := filepath.Glob(candidate)
+				if err == nil && len(matches) > 0 {
+					return check.name
+				}
+				continue
+			}
+			if _, err := os.Stat(candidate); err == nil {
 				return check.name
 			}
 		}
@@ -151,6 +167,8 @@ func detectLanguage(root string) string {
 			counts["python"]++
 		case ".rs":
 			counts["rust"]++
+		case ".cs":
+			counts["csharp"]++
 		}
 	}
 	best := "generic"

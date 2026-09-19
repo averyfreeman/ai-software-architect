@@ -272,6 +272,10 @@ func languageDisplayName(language string) string {
 		return "JavaScript"
 	case "rust":
 		return "Rust"
+	case "java":
+		return "Java"
+	case "csharp":
+		return "C#"
 	default:
 		return language
 	}

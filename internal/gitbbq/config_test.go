@@ -68,4 +68,8 @@ func TestManifestRequiresProblemAndExplicitLanguages(t *testing.T) {
 	if err := ValidateManifest(manifest); err != nil {
 		t.Fatal(err)
 	}
+	manifest.Languages = []string{"java", "csharp"}
+	if err := ValidateManifest(manifest); err != nil {
+		t.Fatal(err)
+	}
 }

@@ -41,7 +41,7 @@ rechecks the repository before writing. Existing files are preserved unless
 `--force` is explicitly supplied.
 
 Language selection is explicit. Supported profiles are Go, Python, TypeScript,
-JavaScript, and Rust. Git profile selection is also explicit: `manual` and
+JavaScript, Rust, Java, and C#. Git profile selection is also explicit: `manual` and
 `guided` authorize no Git mutations by default, while `autonomous` enables the
 individual action switches until a project changes them.
 

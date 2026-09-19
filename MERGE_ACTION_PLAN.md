@@ -1,6 +1,6 @@
 # Merge action plan: agent-first architecture scaffold
 
-Status: Git BBQ lifecycle slices 1–13 are published through `git-bbq-v0.1.12`;
+Status: Git BBQ lifecycle slices 1–14 are published through `git-bbq-v0.1.13`;
 the staged Go migration remains in progress. The roadmap has a fixed 17-slice
 denominator: completed work reduces the remaining count; it never adds a new
 slice merely because implementation details become visible.
@@ -30,17 +30,17 @@ so it is retired. The active ledger is:
 | M-11 | Python deterministic domains and Codex hook/control-plane parity | Complete: `git-bbq-v0.1.10` |
 | M-12 | Fixture parity for contracts, protected paths, Windows behavior, and hook protocol | Complete: `git-bbq-v0.1.11` |
 | M-13 | Go-based Codex packaging, release, notices, and clean-machine install tests | Complete: `git-bbq-v0.1.12` |
+| M-14 | Legacy scaffold language-profile parity for Java and C# | Complete: `git-bbq-v0.1.13` |
 
-The next active slice is `M-14`, remaining legacy scaffold language profiles
-and migration command. It is already counted below.
+The next active slice is `M-15`, the approved migration command plus exploratory
+and lifecycle gates. It is already counted below.
 
-Four concrete slices remain after `M-13`. This count is the fixed remainder
+Three concrete slices remain after `M-14`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
 
-1. `M-14` Remaining legacy scaffold language profiles and migration command.
-2. `M-15` Exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
-3. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
-4. `M-17` Python runtime retirement after every preceding gate passes.
+1. `M-15` Approved migration command plus exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
+2. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
+3. `M-17` Python runtime retirement after every preceding gate passes.
 
 ## Outcome implemented in this slice
 
@@ -56,8 +56,8 @@ Implemented:
   `make-default` answers for binary choices.
 - Separate `.adr-scaffold.yaml` and `.githabits.yaml` files. Scaffold toggles do
   not contain Git mutation policy, and Git defaults do not contain scaffold policy.
-- Language detection and tailored Go, TypeScript, Python, Rust, and generic
-  project skills. Existing files are preserved unless `--force` is explicit.
+- Language detection and tailored Go, TypeScript, Python, Rust, Java, C#, and
+  generic project skills. Existing files are preserved unless `--force` is explicit.
 - Optional `AGENTS.md`, `CLAUDE.md`, scoped skills, project context, architecture
   contract, implementation plan, Pages workflow, static docs starter, and memory
   placeholder generation.

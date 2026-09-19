@@ -28,7 +28,7 @@ const (
 	MattCommit                 = "c55ee460"
 )
 
-var SupportedLanguages = []string{"go", "python", "typescript", "javascript", "rust"}
+var SupportedLanguages = []string{"go", "python", "typescript", "javascript", "rust", "java", "csharp"}
 
 type MattDependency struct {
 	Repository string `yaml:"repository" json:"repository"`
@@ -284,6 +284,10 @@ func normalizeLanguage(language string) string {
 		return "typescript"
 	case "js", "javascript":
 		return "javascript"
+	case "jvm", "java":
+		return "java"
+	case "c#", "cs", "csharp", "dotnet":
+		return "csharp"
 	default:
 		return strings.ToLower(strings.TrimSpace(language))
 	}
