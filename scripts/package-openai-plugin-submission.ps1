@@ -109,7 +109,7 @@ $Archive = New-Object IO.Compression.ZipArchive(
     $false
 )
 try {
-    foreach ($File in Get-ChildItem -LiteralPath $Source -Recurse -File) {
+    foreach ($File in Get-ChildItem -LiteralPath $Source -Recurse -File -Force) {
         $RelativePath = $File.FullName.Substring($Source.Length + 1).Replace("\", "/")
         [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
             $Archive,

@@ -13,6 +13,10 @@ from pathlib import Path
 
 import pytest
 
+from adapters.codex import build_plugin
+from adapters.codex.runtime_targets import target_for_name
+from scripts.package_codex_release import package_release
+
 ROOT = Path(__file__).resolve().parents[2]
 MARKETPLACE_TEMPLATE = ROOT / "adapters" / "codex" / "templates" / "marketplace.json"
 INSTALL_GUIDE = ROOT / "docs" / "INSTALL_CODEX_PLUGIN.md"
@@ -39,6 +43,42 @@ def test_release_marketplace_points_to_bundled_plugin() -> None:
             "category": "Developer Tools",
         }
     ]
+
+
+def test_python_release_packager_creates_aarch64_darwin_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output_parent = tmp_path / "dist" / "codex"
+    output = output_parent / "ai-software-architect"
+    monkeypatch.setattr(build_plugin, "OUTPUT_PARENT", output_parent)
+    monkeypatch.setattr(build_plugin, "OUTPUT", output)
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    executable = runtime / "ai-architect-runtime"
+    executable.write_bytes(b"reviewed-darwin-test-runtime")
+    executable.chmod(0o755)
+    target = target_for_name("aarch64-darwin")
+    plugin = build_plugin.assemble(
+        runtime,
+        plugin_version="0.2.3+darwin.test",
+        target=target,
+    )
+
+    archive, checksum = package_release(
+        plugin,
+        tmp_path / "release",
+        target=target,
+        plugin_version="0.2.3+darwin.test",
+    )
+    assert archive.name == "ai-software-architect-v0.2.3+darwin.test-aarch64-darwin.zip"
+    assert checksum.read_text("ascii").endswith(f"  {archive.name}\n")
+    with zipfile.ZipFile(archive) as release_zip:
+        members = set(release_zip.namelist())
+    assert (
+        "ai-software-architect-v0.2.3+darwin.test-aarch64-darwin/"
+        "plugins/ai-software-architect/runtime/aarch64-darwin/"
+        "ai-architect-runtime/ai-architect-runtime"
+    ) in members
 
 
 def test_install_guide_requires_no_development_runtime() -> None:

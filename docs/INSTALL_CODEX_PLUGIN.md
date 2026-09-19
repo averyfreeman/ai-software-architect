@@ -6,8 +6,8 @@ SPDX-License-Identifier: MIT
 # Install AI Software Architect in Codex
 
 This prebuilt package installs AI Software Architect without Python, `uv`, a
-virtual environment, project dependencies, or a separate model API key. The
-initial release supports Codex Desktop on Windows x86-64.
+virtual environment, project dependencies, or a separate model API key. Choose
+the bundle matching your platform.
 
 ## Requirements
 
@@ -18,20 +18,25 @@ initial release supports Codex Desktop on Windows x86-64.
 
 ## Verify the Download
 
-Download the release ZIP and `SHA256SUMS.txt` from the same GitHub Release. In
-PowerShell, run the following command from the download directory:
+Download the platform-specific release ZIP and `SHA256SUMS.txt` from the same
+GitHub Release. On Windows, run:
 
 ```powershell
 Get-FileHash .\ai-software-architect-v0.1.0-windows-x86_64.zip -Algorithm SHA256
+```
+
+On macOS Apple Silicon, run:
+
+```bash
+shasum -a 256 ai-software-architect-v0.1.0-aarch64-darwin.zip
 ```
 
 Compare the displayed hash with `SHA256SUMS.txt`. Stop if they differ.
 
 ## Install
 
-1. Extract `ai-software-architect-v0.1.0-windows-x86_64.zip`.
-2. Open the extracted `ai-software-architect-v0.1.0-windows-x86_64` directory
-   as a project in Codex Desktop.
+1. Extract the platform-specific ZIP.
+2. Open the extracted release directory as a project in Codex Desktop.
 3. Restart Codex Desktop if the included **AI Software Architect Release**
    marketplace is not immediately visible.
 4. Open **Plugins**.

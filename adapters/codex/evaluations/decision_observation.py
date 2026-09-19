@@ -8,8 +8,8 @@ from __future__ import annotations
 import hashlib
 import re
 
-from adapters.codex.control_plane import parse_option_comparison_markdown
 from adapters.codex.evaluations.models import DecisionObservation
+from adapters.codex.response_policy import parse_option_comparison_markdown
 
 
 def _normalized_assumption(value: str) -> str:

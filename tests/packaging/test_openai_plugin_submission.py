@@ -104,8 +104,12 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
 
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
-    fake_uv = fake_bin / "uv.cmd"
-    fake_uv.write_text("@exit /b 0\n", encoding="ascii")
+    fake_uv = fake_bin / ("uv.cmd" if os.name == "nt" else "uv")
+    if os.name == "nt":
+        fake_uv.write_text("@exit /b 0\n", encoding="ascii")
+    else:
+        fake_uv.write_text("#!/bin/sh\nexit 0\n", encoding="ascii")
+        fake_uv.chmod(0o755)
     output = tmp_path / "output"
     environment = os.environ.copy()
     path_key = next(key for key in environment if key.casefold() == "path")

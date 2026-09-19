@@ -9,8 +9,9 @@ This is the canonical maintainer guide for preparing, validating, testing, and
 publishing the Codex plugin through GitHub. It documents the current repository
 behavior as well as the manual gates that remain necessary before a release.
 
-The initial supported package is Windows x86-64. Future coding-agent adapters and
-operating-system packages require their own validated release procedures.
+The supported packaged targets are Windows x86-64 and native macOS Apple Silicon
+(`aarch64-darwin`). Future coding-agent adapters and operating-system packages
+require their own validated release procedures.
 
 ## PowerShell Execution Policy
 
@@ -62,9 +63,11 @@ It currently:
 
 1. starts automatically when a tag matching `v*` is pushed;
 2. derives the plugin version from that tag;
-3. builds the self-contained Windows x86-64 plugin with that exact version;
-4. validates and smoke-tests the assembled package;
-5. creates an installable repository marketplace ZIP and SHA-256 checksum; and
+3. builds self-contained Windows x86-64 and macOS Apple Silicon plugins with that
+   exact version;
+4. validates and smoke-tests both assembled packages;
+5. creates target-specific installable repository marketplace ZIPs and SHA-256
+   checksums; and
 6. uploads them as GitHub Actions artifacts.
 
 It currently does **not**:
@@ -196,8 +199,10 @@ Reuse the reviewed runtime only when none of these changed:
 
 - `adapters/codex/runtime_entry.py`;
 - `adapters/codex/hook_entry.py`;
+- `adapters/codex/hook_lifecycle.py`;
 - `adapters/codex/artifact_guard.py`;
-- `adapters/codex/control_plane.py`;
+- `adapters/codex/activation_policy.py`, `tool_policy.py`, and `response_policy.py`;
+- `adapters/codex/state_store.py`;
 - `tools/python-mcp/`;
 - `shared/schemas/`;
 - runtime dependencies or `uv.lock`; or
@@ -477,9 +482,10 @@ blocked; the Codex package is already designed without persistent MCP registrati
 
 ### Gate F: Clean-Machine Acceptance
 
-On a clean Windows x86-64 environment without Python, `uv`, or development caches:
+On clean Windows x86-64 and macOS Apple Silicon environments without Python,
+`uv`, or development caches:
 
-1. install the exact package;
+1. install the exact platform-specific package;
 2. activate all five reviewed hooks;
 3. run one main workflow and one approved artifact write that exercises deterministic pre-write validation;
 4. verify that no first-run download or network listener appears; and

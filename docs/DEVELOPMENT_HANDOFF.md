@@ -312,7 +312,9 @@ Build the exact release candidate from the repository root:
 ```
 
 This performs a full self-contained Windows x86-64 runtime build, plugin validation,
-and runtime smoke test. Do not use `-ReuseRuntime` for a release candidate.
+and runtime smoke test. On native Apple Silicon macOS, use the target-specific
+Python build and package commands documented in `scripts/README.md`. Do not use
+`-ReuseRuntime` for a release candidate.
 
 Create the marketplace bundle with the release/package scripts documented in
 `docs/RELEASING.md` and `scripts/README.md`. The bundle is intended to install

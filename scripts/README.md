@@ -121,6 +121,18 @@ The versioned source inputs are:
 - `docs/INSTALL_CODEX_PLUGIN.md`; and
 - `scripts/package-codex-release.ps1`.
 
+On native Apple Silicon macOS, use the cross-platform packager after building
+and validating the `aarch64-darwin` package:
+
+```bash
+uv run python scripts/package_codex_release.py \
+  --target aarch64-darwin \
+  --plugin-version 0.2.3
+```
+
+It creates `ai-software-architect-v<version>-aarch64-darwin.zip` and a matching
+`SHA256SUMS.txt` under `dist/release/`.
+
 ## Package an OpenAI Plugin-Directory Submission
 
 The OpenAI directory uses a dedicated archive whose ZIP root is the plugin itself,
