@@ -33,7 +33,8 @@ so it is retired. The active ledger is:
 | M-14 | Legacy scaffold language-profile parity for Java and C# | Complete: `git-bbq-v0.1.13` |
 
 The next active slice is `M-15`, the approved migration command plus exploratory
-and lifecycle gates. It is already counted below.
+and lifecycle gates. It is already counted below. M-15 is in progress with the
+read-only legacy migration assessment; apply remains approval-gated.
 
 Three concrete slices remain after `M-14`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
@@ -74,6 +75,8 @@ Implemented:
   suspected values.
 - Explicit Git and `gh repo create` planning plus `--approve` execution. Stored
   preferences are never treated as permission.
+- Read-only `git-bbq migrate` inventory of legacy `.ai-architect` scaffolds,
+  proposed Matt-native target paths, conflicts, and approval warnings.
 - An official Go MCP STDIO adapter with five read-only tools: contract validation,
   artifact scanning, complete bundle validation, decision listing, and bounded
   inline dependency analysis.

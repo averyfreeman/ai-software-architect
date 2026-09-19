@@ -87,3 +87,13 @@ func TestRunGithabitsPlanBuildsRemoteProvisionPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRunMigrateReportsReadOnlyAssessment(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".adr-scaffold.yaml"), []byte("version: 1\nlanguage: go\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runMigrate([]string{"--json", root}); err != nil {
+		t.Fatal(err)
+	}
+}

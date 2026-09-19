@@ -40,6 +40,11 @@ conflicts. `git-bbq apply --approve` is the separate persistence step; it
 rechecks the repository before writing. Existing files are preserved unless
 `--force` is explicitly supplied.
 
+For a legacy `ai-architect` project, run `git-bbq migrate [path] --json` first.
+This command is read-only: it inventories `.ai-architect` artifacts, proposed
+Matt-native targets, conflicts, and the explicit-approval boundary. It does not
+delete or rewrite the legacy scaffold.
+
 Language selection is explicit. Supported profiles are Go, Python, TypeScript,
 JavaScript, Rust, Java, and C#. Git profile selection is also explicit: `manual` and
 `guided` authorize no Git mutations by default, while `autonomous` enables the
