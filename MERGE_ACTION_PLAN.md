@@ -1,7 +1,8 @@
 # Merge action plan: agent-first architecture scaffold
 
-Status: Git BBQ lifecycle slices 1–14 are published through `git-bbq-v0.1.13`;
-the staged Go migration remains in progress. The roadmap has a fixed 17-slice
+Status: Git BBQ lifecycle slices 1–14 are complete through `git-bbq-v0.1.13`;
+M-15 migration increments are published through `git-bbq-v0.1.15`, and the
+staged Go migration remains in progress. The roadmap has a fixed 17-slice
 denominator: completed work reduces the remaining count; it never adds a new
 slice merely because implementation details become visible.
 
@@ -31,6 +32,7 @@ so it is retired. The active ledger is:
 | M-12 | Fixture parity for contracts, protected paths, Windows behavior, and hook protocol | Complete: `git-bbq-v0.1.11` |
 | M-13 | Go-based Codex packaging, release, notices, and clean-machine install tests | Complete: `git-bbq-v0.1.12` |
 | M-14 | Legacy scaffold language-profile parity for Java and C# | Complete: `git-bbq-v0.1.13` |
+| M-15 | Approved migration command plus exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates | In progress: `git-bbq-v0.1.15` covers assessment and additive migration apply |
 
 The next active slice is `M-15`, the approved migration command plus exploratory
 and lifecycle gates. It is already counted below. M-15 is in progress with the
