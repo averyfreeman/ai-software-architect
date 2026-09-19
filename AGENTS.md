@@ -8,13 +8,27 @@ SPDX-License-Identifier: MIT
 ## Scope
 
 These instructions apply to the complete repository. They guide coding assistants
-that develop, review, test, package, or document AI Software Architect. They are
-development instructions, not runtime instructions delivered automatically to
-plugin users.
+that develop, review, test, package, or document Git BBQ and its legacy
+AI Software Architect compatibility work. They are development instructions, not
+runtime instructions delivered automatically to plugin users.
 
 Follow the user's current request first. Preserve unrelated working-tree changes,
 do not stage or commit files unless explicitly requested, and never rewrite user
 work merely to make the tree clean.
+
+## Git BBQ direction
+
+Git BBQ is the canonical replacement track for new scaffolding and lifecycle
+work. Matt Pocock skills under `.agents/` own semantic architecture reasoning,
+project vocabulary, and the native ADR format. The Go package under
+`internal/gitbbq/` owns scaffolding, githabits, projections, validation, and
+Codex hook transport. New project artifacts use `CONTEXT.md`, `CONTEXT-MAP.md`,
+`docs/adr/`, `.githabits.yaml`, `.gitbbq-manifest.yaml`, and `.agents/skills/`.
+
+Do not create new `.ai-architect/`, `.adr-scaffold.yaml`, or structured native
+ADR artifacts for Git BBQ projects. Existing AI Software Architect files and
+Python adapters remain a separate compatibility workstream until a deliberate
+cutover; preserve them when working on Git BBQ.
 
 ## Product and architecture
 
@@ -47,7 +61,17 @@ host models is not a requirement; compatible contracts and workflow intent are.
 
 ## Sources of truth
 
-Use the following hierarchy when interpreting or changing intended behavior:
+For Git BBQ work, use this order first:
+
+1. `docs/GIT_BBQ.md` defines the product boundary and project artifact contract.
+2. Matt Pocock skill instructions under `.agents/skills/` define semantic ADR and
+   context behavior.
+3. Go contracts and validators under `internal/gitbbq/` define serialized
+   scaffolding, githabits, projection, and hook behavior.
+4. `adapters/codex/templates/git-bbq-*` defines Codex packaging projections.
+
+The following hierarchy applies to the legacy AI Software Architect workstream
+when interpreting or changing intended behavior:
 
 1. `specs/AISoftwareArchitect.md` is the living product specification.
 2. Pydantic models under `shared/schemas/src/` are authoritative for serialized

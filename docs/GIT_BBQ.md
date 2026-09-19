@@ -1,0 +1,86 @@
+# Git BBQ
+
+Git BBQ is the Go-first scaffolding and lifecycle layer around Matt Pocock's
+architecture skills. The division of responsibility is intentionally narrow:
+
+- Matt skills own domain language, architecture reasoning, and the canonical ADR
+  and context conventions.
+- Git BBQ owns project bootstrap, language-specific agent skills, Git policy,
+  deterministic projections, validation, and Codex lifecycle hooks.
+- Codex remains the host-native reasoning runtime; Git BBQ does not call another
+  model or replace Matt's semantic interview.
+
+## Project contract
+
+`git-bbq init` writes operational state and the agent-facing router. A normal
+project contains:
+
+| Path | Role |
+| --- | --- |
+| `CONTEXT.md` | Matt-native project vocabulary and domain language |
+| `CONTEXT-MAP.md` | Root context map for future context-specific vocabulary |
+| `docs/adr/NNNN-slug.md` | The only architectural decision source of truth |
+| `.githabits.yaml` | Granular policy for init, branch, stage, commit, tag, remote, and push |
+| `.gitbbq-manifest.yaml` | Project problem, languages, pinned Matt dependency, and hooks |
+| `AGENTS.md` / `CLAUDE.md` | Thin agent routers |
+| `.agents/skills/` | Githabits plus selected language skills |
+| `.agents/mattpocock/DEPENDENCY.yaml` | Upstream repository and commit pin |
+| `architecture-contract.yaml` | Generated contract projection |
+| `implementation-plan.md` | Generated implementation projection |
+| `docs/adr/index.json` | Generated ADR retrieval projection |
+
+The ADR directory is created lazily when the first ADR is recorded, matching the
+Matt format. Generated projections can be recreated with `git-bbq project` and
+are never a second decision history.
+
+## Existing repositories
+
+Use `git-bbq assess` first. It is read-only and reports proposed paths and
+conflicts. `git-bbq apply --approve` is the separate persistence step; it
+rechecks the repository before writing. Existing files are preserved unless
+`--force` is explicitly supplied.
+
+Language selection is explicit. Supported profiles are Go, Python, TypeScript,
+JavaScript, and Rust. Git profile selection is also explicit: `manual` and
+`guided` authorize no Git mutations by default, while `autonomous` enables the
+individual action switches until a project changes them.
+
+CLI flags take precedence over project configuration, and project configuration
+takes precedence over the optional user-level preference file. Interactive setup
+asks whether the selected profile and languages should be remembered. The
+`--remember` flag makes that choice explicit in non-interactive use.
+
+## Codex integration
+
+The plugin package is built from the same Go CLI:
+
+```sh
+python3 scripts/build_git_bbq_plugin.py --force
+```
+
+The package exposes the structured `Git BBQ` identity and direct `$git-bbq`
+skill, and installs exactly five required hooks: `UserPromptSubmit`,
+`PreToolUse`, `PostToolUse`, `PostCompact`, and `Stop`. The runtime accepts one
+JSON event on standard input and fails closed when the current workspace lacks a
+valid Git BBQ manifest or hook configuration.
+
+Generate public contract schemas with:
+
+```sh
+go run ./cmd/git-bbq schema .
+```
+
+The schemas are written under `schemas/gitbbq/` and are derived from the Go
+contracts rather than hand-maintained copies.
+
+An explicit `git-bbq update --approve --commit <pin>` changes the Matt dependency
+pin in both the manifest and its dependency metadata. Validation never fetches or
+silently changes the pinned dependency.
+
+## External Matt dependency
+
+New projects record the upstream Matt repository and commit under
+`.agents/mattpocock/DEPENDENCY.yaml`. The initial pin is upstream
+`c55ee460`; an independently maintained semantic-parity fork can replace it
+later through an explicit update workflow. Git BBQ does not silently fetch or
+replace a project dependency during validation.

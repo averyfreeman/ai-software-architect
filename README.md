@@ -3,11 +3,43 @@ SPDX-FileCopyrightText: 2026 Leonardo Muffato (AUTOSOFT Engineering - www.autoso
 SPDX-License-Identifier: MIT
 -->
 
-# AI Software Architect
+# Git BBQ
 
 ![AI Software Architect logo](assets/AISoftwareArchitect.png)
 
-AI Software Architect is an open-source, host-native architecture agent for coding assistants. It helps developers clarify architecture-significant requirements, compare credible options, approve and record decisions, prepare coding handoffs, and review implementation conformance.
+Git BBQ is an open-source, Go-first scaffolding and lifecycle tool for coding
+agents. It combines Matt Pocock's host-native architecture skills with
+project-owned conventions for Git habits, durable ADRs, agent instructions,
+language skills, Codex hooks, validation, and implementation handoffs.
+
+The original AI Software Architect implementation remains in this repository as
+the existing architecture-agent workstream. Git BBQ is the replacement product
+track: Matt Pocock skills own semantic architecture reasoning, while the Go
+tool owns scaffolding, projections, lifecycle enforcement, and host integration.
+
+## Git BBQ quick start
+
+From a new or existing repository:
+
+```bash
+go run ./cmd/git-bbq init --problem "Agents need a portable project scaffold." --language go --language python ./my-project
+go run ./cmd/git-bbq adr new --title "Use Matt-native ADRs" --context "Agents need durable decisions." --decision "Use docs/adr files." --why "The format is host-neutral." ./my-project
+go run ./cmd/git-bbq project ./my-project
+go run ./cmd/git-bbq validate ./my-project
+```
+
+The scaffold creates `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`,
+`docs/adr/`, `.githabits.yaml`, `.gitbbq-manifest.yaml`, language skills, and
+the five-hook configuration used by Codex. Use `git-bbq assess` for a
+read-only inventory of an existing repository, then `git-bbq apply --approve`
+when you are ready to persist the scaffold.
+
+The Matt Pocock skills are pinned as an external dependency under
+`.agents/mattpocock`; Git BBQ projects the resulting ADRs and context into
+machine-readable contract, plan, and index artifacts without maintaining a
+second ADR format.
+
+See the detailed [Git BBQ design and operating contract](docs/GIT_BBQ.md).
 
 Maintained by Leonardo Muffato at [AUTOSOFT Engineering](https://www.autosoft-engineering.de).
 

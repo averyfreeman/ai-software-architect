@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git BBQ workflow prototype</title>
+  <style>
+    :root { color-scheme: light; --ink: #20242a; --muted: #66707a; --line: #d9dee4; --accent: #b14d2f; --wash: #fff7f2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f6f7f8; color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+    main { max-width: 920px; margin: 0 auto; padding: 42px 22px 64px; }
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    h2 { margin-top: 32px; font-size: 1.15rem; }
+    .intro, .state, .walkthrough { border: 1px solid var(--line); border-radius: 12px; background: white; padding: 20px; }
+    .intro { background: var(--wash); border-color: #e7c9bc; }
+    .muted { color: var(--muted); }
+    .state-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 14px; }
+    .field { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .field strong { display: block; font-size: .78rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .field span { display: block; margin-top: 4px; font-weight: 650; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    button { border: 1px solid #aeb7c0; border-radius: 7px; background: white; color: var(--ink); cursor: pointer; padding: 9px 12px; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .tabs button.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .step { margin: 0 0 12px; color: var(--muted); }
+    #change { min-height: 1.5em; margin-top: 14px; color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="intro">
+    <h1>Git BBQ workflow</h1>
+    <p>This throwaway demo asks one question: does the bootstrap, semantic interview, approval, and Git recovery state model feel safe and understandable before it becomes Go code?</p>
+  </section>
+
+  <h2>Current state</h2>
+  <section class="state" aria-live="polite">
+    <div class="state-grid" id="state"></div>
+    <div id="change"></div>
+  </section>
+
+  <h2>Free play</h2>
+  <section class="state">
+    <div class="buttons" id="free-play"></div>
+  </section>
+
+  <h2>Guided walkthroughs</h2>
+  <section class="walkthrough">
+    <div class="tabs" id="tabs"></div>
+    <p class="step" id="scenario-description"></p>
+    <div class="buttons" id="scenario-actions"></div>
+  </section>
+</main>
+<script>
+  const initialState = () => ({
+    situation: "new project",
+    phase: "empty",
+    operationalAnswers: "not collected",
+    semanticAnswers: "not collected",
+    approval: "not required",
+    remote: "not configured",
+    lastChange: "Ready to begin"
+  });
+
+  // Portable logic module: the page only dispatches actions and renders results.
+  function transition(state, action) {
+    const next = { ...state };
+    switch (action) {
+      case "create_project":
+        next.phase = "bootstrapped";
+        next.operationalAnswers = "not collected";
+        next.lastChange = "Operational state exists; semantic questions are next.";
+        return next;
+      case "answer_operations":
+        if (state.phase !== "bootstrapped") return blocked(state, "Operational answers are only collected after bootstrap.");
+        next.operationalAnswers = "complete";
+        next.phase = "semantic interview";
+        next.lastChange = "Language and Git preferences are explicit.";
+        return next;
+      case "answer_semantics":
+        if (state.phase !== "semantic interview") return blocked(state, "Semantic answers require the operational interview first.");
+        next.semanticAnswers = "complete";
+        next.phase = "awaiting approval";
+        next.approval = "required";
+        next.lastChange = "Matt-native documents are ready for review.";
+        return next;
+      case "approve":
+        if (state.phase !== "awaiting approval") return blocked(state, "Approval is only available after the semantic interview.");
+        next.approval = "approved";
+        next.phase = "applied";
+        next.remote = "configured";
+        next.lastChange = "Validated documents and configured Git policy are applied.";
+        return next;
+      case "remote_failed":
+        if (state.phase !== "applied") return blocked(state, "Remote recovery matters after local application.");
+        next.remote = "pending repair";
+        next.lastChange = "Local work remains; pushes are blocked until repair.";
+        return next;
+      case "retry_remote":
+        if (state.remote !== "pending repair") return blocked(state, "There is no pending remote repair.");
+        next.remote = "configured";
+        next.lastChange = "Remote repair succeeded; Git actions may resume.";
+        return next;
+      case "assess_existing":
+        next.situation = "existing repository";
+        next.phase = "read-only assessment";
+        next.operationalAnswers = "not collected";
+        next.semanticAnswers = "not collected";
+        next.approval = "not required";
+        next.remote = "unchanged";
+        next.lastChange = "No files or Git state changed.";
+        return next;
+      case "approve_existing":
+        if (state.phase !== "read-only assessment") return blocked(state, "Existing repositories require assessment before apply.");
+        next.phase = "applied";
+        next.approval = "approved";
+        next.lastChange = "The rechecked file plan was approved and applied.";
+        return next;
+      case "reset":
+        return initialState();
+      default:
+        return blocked(state, "That action is not part of this workflow.");
+    }
+  }
+
+  function blocked(state, message) {
+    return { ...state, lastChange: "Blocked: " + message };
+  }
+
+  const scenarios = [
+    { id: "new", label: "New project", description: "A new folder receives operational state before Matt asks semantic questions.", steps: ["create_project", "answer_operations", "answer_semantics", "approve", "remote_failed", "retry_remote"] },
+    { id: "existing", label: "Existing repository", description: "An existing repository is assessed without writes, then applied only after a separate approval.", steps: ["assess_existing", "approve_existing"] },
+    { id: "illegal", label: "Illegal shortcuts", description: "Try to approve before the interview and repair a remote that never failed.", steps: ["approve", "retry_remote"] }
+  ];
+
+  const labels = {
+    create_project: "Create project",
+    answer_operations: "Answer operational questions",
+    answer_semantics: "Answer semantic questions",
+    approve: "Approve new project",
+    remote_failed: "Remote setup fails",
+    retry_remote: "Retry remote setup",
+    assess_existing: "Assess existing repository",
+    approve_existing: "Approve existing apply",
+    reset: "Reset"
+  };
+
+  let state = initialState();
+  let selectedScenario = scenarios[0];
+  let scenarioIndex = 0;
+
+  function dispatch(action) {
+    state = transition(state, action);
+    render();
+  }
+
+  function render() {
+    const fields = [
+      ["Situation", state.situation], ["Phase", state.phase], ["Operational answers", state.operationalAnswers],
+      ["Semantic answers", state.semanticAnswers], ["Approval", state.approval], ["Remote", state.remote]
+    ];
+    document.querySelector("#state").innerHTML = fields.map(([name, value]) => `<div class="field"><strong>${name}</strong><span>${value}</span></div>`).join("");
+    document.querySelector("#change").textContent = state.lastChange;
+    document.querySelector("#free-play").innerHTML = Object.keys(labels).map(action => `<button data-action="${action}">${labels[action]}</button>`).join("");
+    document.querySelectorAll("#free-play button").forEach(button => button.onclick = () => dispatch(button.dataset.action));
+    document.querySelector("#tabs").innerHTML = scenarios.map(scenario => `<button class="${scenario.id === selectedScenario.id ? "active" : ""}" data-scenario="${scenario.id}">${scenario.label}</button>`).join("");
+    document.querySelectorAll("#tabs button").forEach(button => button.onclick = () => {
+      selectedScenario = scenarios.find(scenario => scenario.id === button.dataset.scenario);
+      scenarioIndex = 0;
+      state = initialState();
+      render();
+    });
+    document.querySelector("#scenario-description").textContent = selectedScenario.description;
+    const action = selectedScenario.steps[scenarioIndex];
+    document.querySelector("#scenario-actions").innerHTML = action ? `<button data-action="${action}">${labels[action]}</button>` : "<span class='muted'>Walkthrough complete. Choose another tab or reset.</span>";
+    const scenarioButton = document.querySelector("#scenario-actions button");
+    if (scenarioButton) scenarioButton.onclick = () => { dispatch(action); scenarioIndex += 1; render(); };
+  }
+
+  render();
+</script>
+</body>
+</html>
