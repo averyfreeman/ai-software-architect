@@ -36,7 +36,8 @@ so it is retired. The active ledger is:
 
 The next active slice is `M-15`, the approved migration command plus exploratory
 and lifecycle gates. It is already counted below. M-15 is in progress with the
-read-only assessment and additive, approval-gated migration apply path.
+read-only assessment, additive migration apply path, and the next immutable
+ownership/uninstall gate.
 
 Three concrete slices remain after `M-14`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
@@ -80,6 +81,8 @@ Implemented:
 - Read-only `git-bbq migrate` inventory plus an additive `--approve` migration
   path that archives incompatible legacy Git habits, converts validated ADRs,
   preserves `.ai-architect/`, and validates the resulting project.
+- Hash-based ownership ledgers and an approval-gated `git-bbq uninstall` path
+  remove only unchanged generated files while preserving modified files.
 - An official Go MCP STDIO adapter with five read-only tools: contract validation,
   artifact scanning, complete bundle validation, decision listing, and bounded
   inline dependency analysis.

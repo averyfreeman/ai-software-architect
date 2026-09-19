@@ -124,6 +124,15 @@ func ScaffoldProject(root string, options ScaffoldOptions) (ScaffoldResult, erro
 			}
 		}
 	}
+	ownershipCreated, err := writeOwnershipLedger(root, result.Created, options.Force)
+	if err != nil {
+		return ScaffoldResult{}, err
+	}
+	if ownershipCreated {
+		result.Created = append(result.Created, OwnershipFilename)
+	} else {
+		result.Skipped = append(result.Skipped, OwnershipFilename)
+	}
 	sort.Strings(result.Created)
 	sort.Strings(result.Skipped)
 	return result, nil

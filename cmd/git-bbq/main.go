@@ -42,6 +42,8 @@ func main() {
 		err = runApply(os.Args[2:])
 	case "migrate":
 		err = runMigrate(os.Args[2:])
+	case "uninstall":
+		err = runUninstall(os.Args[2:])
 	case "adr":
 		err = runADR(os.Args[2:])
 	case "validate":
@@ -78,6 +80,7 @@ Usage:
   git-bbq assess [path] [--json]
   git-bbq apply [path] --approve --problem TEXT --language go[,python] [-i]
   git-bbq migrate [path] [--approve] [--force] [--json]
+  git-bbq uninstall [path] [--approve] [--json]
   git-bbq adr new [path] --title TITLE --context TEXT --decision TEXT --why TEXT
   git-bbq adr index [path]
   git-bbq validate [path]
@@ -298,6 +301,32 @@ func runMigrate(args []string) error {
 		return err
 	}
 	return output(assessment, selectedFormat(*format, *jsonOutput))
+}
+
+func runUninstall(args []string) error {
+	fs := flag.NewFlagSet("uninstall", flag.ContinueOnError)
+	format := fs.String("format", "text", "output format (text|json)")
+	jsonOutput := fs.Bool("json", false, "emit JSON")
+	approve := fs.Bool("approve", false, "approve the reviewed uninstall assessment")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	root := "."
+	if fs.NArg() > 0 {
+		root = fs.Arg(0)
+	}
+	if !*approve {
+		assessment, err := gitbbq.AssessUninstall(root)
+		if err != nil {
+			return err
+		}
+		return output(assessment, selectedFormat(*format, *jsonOutput))
+	}
+	result, err := gitbbq.Uninstall(root)
+	if err != nil {
+		return err
+	}
+	return output(result, selectedFormat(*format, *jsonOutput))
 }
 
 func runADR(args []string) error {

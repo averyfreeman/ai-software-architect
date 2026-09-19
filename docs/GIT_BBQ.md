@@ -48,6 +48,11 @@ proposed Matt-native targets, conflicts, and the explicit-approval boundary.
 incompatible legacy `.githabits.yaml` before replacing it. `--force` is required
 for that legacy-config replacement.
 
+Every new scaffold records hashes in `.gitbbq/ownership.json`. Run
+`git-bbq uninstall [path] --json` to review removable files; only
+`git-bbq uninstall [path] --approve` removes unchanged files. Modified,
+symlinked, and non-regular files are reported as conflicts and preserved.
+
 Language selection is explicit. Supported profiles are Go, Python, TypeScript,
 JavaScript, Rust, Java, and C#. Git profile selection is also explicit: `manual` and
 `guided` authorize no Git mutations by default, while `autonomous` enables the

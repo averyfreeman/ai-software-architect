@@ -122,3 +122,22 @@ func TestRunMigrateAppliesOnlyWithApproval(t *testing.T) {
 		t.Fatalf("legacy Git habits archive missing: %v", err)
 	}
 }
+
+func TestRunUninstallDefaultsToAssessmentAndRequiresApproval(t *testing.T) {
+	root := t.TempDir()
+	if _, err := gitbbq.ScaffoldProject(root, gitbbq.ScaffoldOptions{ProjectName: "Example", Problem: "Remove only owned files.", Languages: []string{"go"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := runUninstall([]string{"--json", root}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, gitbbq.OwnershipFilename)); err != nil {
+		t.Fatalf("assessment changed ownership ledger: %v", err)
+	}
+	if err := runUninstall([]string{"--approve", "--json", root}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, gitbbq.OwnershipFilename)); !os.IsNotExist(err) {
+		t.Fatalf("approved uninstall left ownership ledger or returned unexpected error: %v", err)
+	}
+}

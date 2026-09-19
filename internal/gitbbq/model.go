@@ -22,6 +22,7 @@ const (
 	HookConfigPath             = ".gitbbq/hooks.json"
 	SessionPath                = ".gitbbq/session.json"
 	SessionIgnorePath          = ".gitbbq/.gitignore"
+	OwnershipFilename          = ".gitbbq/ownership.json"
 	MattDependencyMetadataPath = ".agents/mattpocock/DEPENDENCY.yaml"
 	MattDependencyPath         = ".agents/mattpocock"
 	MattRepository             = "https://github.com/mattpocock/skills.git"
@@ -329,6 +330,27 @@ type Projection struct {
 	Paths    []string `json:"paths"`
 }
 
+type OwnershipLedger struct {
+	Version int               `json:"version"`
+	Files   map[string]string `json:"files"`
+}
+
+type UninstallAssessment struct {
+	Mode      string   `json:"mode"`
+	Root      string   `json:"root"`
+	Removable []string `json:"removable"`
+	Conflicts []string `json:"conflicts"`
+	Missing   []string `json:"missing"`
+	ReadOnly  bool     `json:"read_only"`
+}
+
+type UninstallResult struct {
+	Root      string   `json:"root"`
+	Removed   []string `json:"removed"`
+	Preserved []string `json:"preserved"`
+	Missing   []string `json:"missing"`
+}
+
 type ArchitectureContract struct {
 	SchemaVersion string   `yaml:"schema_version" json:"schema_version"`
 	Revision      int      `yaml:"revision" json:"revision"`
@@ -350,6 +372,7 @@ func projectPaths(root string) []string {
 		".agents/skills/githabits/SKILL.md",
 		HookConfigPath,
 		SessionPath,
+		OwnershipFilename,
 		ContractFilename,
 		ImplementationPlanFilename,
 		ADRIndexFilename,
