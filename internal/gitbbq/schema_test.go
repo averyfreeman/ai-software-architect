@@ -12,7 +12,7 @@ func TestGenerateSchemasReflectsGoContracts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(schemas) != 3 {
+	if len(schemas) != 4 {
 		t.Fatalf("schema count = %d", len(schemas))
 	}
 	for name, data := range schemas {
@@ -29,7 +29,7 @@ func TestWriteSchemasUsesStableProjectDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(paths) != 3 {
+	if len(paths) != 4 {
 		t.Fatalf("paths = %#v", paths)
 	}
 	for _, path := range paths {

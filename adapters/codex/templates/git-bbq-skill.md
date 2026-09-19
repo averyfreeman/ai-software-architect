@@ -15,6 +15,19 @@ policy before initializing Git, creating branches, staging, committing, tagging,
 configuring a remote, or pushing. A profile is policy, not a bypass for
 validation or user approval.
 
+Preview one action before asking the host to approve it:
+
+```sh
+git-bbq githabits plan --action stage --path path/to/reviewed-file --json
+git-bbq githabits plan --action commit --message "feat: explain the change" --json
+git-bbq githabits plan --action tag --tag v0.1.1 --json
+git-bbq githabits plan --action push --branch main --json
+```
+
+The planner is read-only. Use its argument-separated command only after the
+Codex host has granted explicit approval; a pending remote intentionally blocks
+push planning.
+
 ADRs use the Matt-native sequential format in `docs/adr/NNNN-slug.md`. Do not
 create a second ADR directory or put native structured metadata into an ADR.
 Generated contracts, plans, and indexes are projections and may be recreated

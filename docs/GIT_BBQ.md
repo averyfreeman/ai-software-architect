@@ -50,6 +50,22 @@ takes precedence over the optional user-level preference file. Interactive setup
 asks whether the selected profile and languages should be remembered. The
 `--remember` flag makes that choice explicit in non-interactive use.
 
+The first Git mutation seam is read-only planning:
+
+```sh
+git-bbq githabits plan --action stage --path docs/adr/0001-use-matt-adrs.md --json
+git-bbq githabits plan --action commit --message "feat: record architecture decision" --json
+git-bbq githabits plan --action tag --tag v0.1.1 --json
+git-bbq githabits plan --action push --branch main --json
+```
+
+Plans render argument-separated Git commands and report whether `.githabits.yaml`
+authorizes the action. They never execute Git, and every plan still requires
+host-level approval. Push planning emits a command only after the project remote
+is explicitly marked `configured`; staging rejects absolute and parent-traversal
+paths, and conventional-commit profiles reject messages without a recognized
+commit type.
+
 ## Codex integration
 
 The plugin package is built from the same Go CLI:
@@ -71,7 +87,8 @@ go run ./cmd/git-bbq schema .
 ```
 
 The schemas are written under `schemas/gitbbq/` and are derived from the Go
-contracts rather than hand-maintained copies.
+contracts rather than hand-maintained copies. The planner response is available
+as `schemas/gitbbq/githabits-plan.schema.json`.
 
 An explicit `git-bbq update --approve --commit <pin>` changes the Matt dependency
 pin in both the manifest and its dependency metadata. Validation never fetches or

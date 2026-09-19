@@ -15,6 +15,7 @@ func GenerateSchemas() (map[string][]byte, error) {
 	}{
 		{name: "gitbbq-manifest.schema.json", value: Manifest{}},
 		{name: "githabits.schema.json", value: GitHabits{}},
+		{name: "githabits-plan.schema.json", value: GitPlan{}},
 		{name: "architecture-contract.schema.json", value: ArchitectureContract{}},
 	}
 	result := make(map[string][]byte, len(values))
@@ -26,6 +27,8 @@ func GenerateSchemas() (map[string][]byte, error) {
 			schema, err = jsonschema.For[Manifest](nil)
 		case GitHabits:
 			schema, err = jsonschema.For[GitHabits](nil)
+		case GitPlan:
+			schema, err = jsonschema.For[GitPlan](nil)
 		case ArchitectureContract:
 			schema, err = jsonschema.For[ArchitectureContract](nil)
 		}

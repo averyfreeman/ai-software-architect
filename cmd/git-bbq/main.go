@@ -80,6 +80,7 @@ Usage:
   git-bbq validate [path]
   git-bbq project [path]
   git-bbq githabits [path]
+  git-bbq githabits plan [path] --action commit --message "feat: ..."
   git-bbq update [path]
   git-bbq hook <event>
   git-bbq doctor [path]
@@ -361,6 +362,9 @@ func runProject(args []string) error {
 }
 
 func runGithabits(args []string) error {
+	if len(args) > 0 && args[0] == "plan" {
+		return runGithabitsPlan(args[1:])
+	}
 	fs := flag.NewFlagSet("githabits", flag.ContinueOnError)
 	format := fs.String("format", "text", "output format (text|json)")
 	jsonOutput := fs.Bool("json", false, "emit JSON")
@@ -376,6 +380,42 @@ func runGithabits(args []string) error {
 		return err
 	}
 	return output(config, selectedFormat(*format, *jsonOutput))
+}
+
+func runGithabitsPlan(args []string) error {
+	fs := flag.NewFlagSet("githabits plan", flag.ContinueOnError)
+	action := fs.String("action", "", "Git action to preview")
+	branch := fs.String("branch", "", "branch override")
+	message := fs.String("message", "", "commit message")
+	tag := fs.String("tag", "", "tag name")
+	format := fs.String("format", "text", "output format (text|json)")
+	jsonOutput := fs.Bool("json", false, "emit JSON")
+	var paths stringList
+	fs.Var(&paths, "path", "repository-relative path to stage; repeat or comma-separate")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if strings.TrimSpace(*action) == "" {
+		return errors.New("githabits plan requires --action")
+	}
+	root := "."
+	if fs.NArg() > 0 {
+		root = fs.Arg(0)
+	}
+	config, err := gitbbq.ReadGitHabits(root)
+	if err != nil {
+		return err
+	}
+	plan, err := gitbbq.PlanGitAction(config, gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action))), gitbbq.GitPlanRequest{
+		Branch:  *branch,
+		Message: *message,
+		Tag:     *tag,
+		Paths:   paths,
+	})
+	if err != nil {
+		return err
+	}
+	return output(plan, selectedFormat(*format, *jsonOutput))
 }
 
 func runUpdate(args []string) error {
