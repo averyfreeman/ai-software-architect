@@ -133,6 +133,8 @@ This is intentionally not an unsupervised background agent. The architect runs o
 - **Local-first operation:** requires no managed backend, hosted database, account system, usage metering, or project-data upload service.
 - **Modular Agent Skills:** separates interviewing, option evaluation, decision creation, coding handoff, and conformance review into reusable skills based on the open `SKILL.md` format.
 - **Progressive disclosure:** initially exposes only skill metadata, loads a workflow when activated, and reads only the architecture references relevant to the current decision.
+- **Agent-first Go scaffold:** `ai-architect` asks for project motivation, generates language-scoped `AGENTS.md` and skills, creates structured ADR/context/contract starters, and keeps Git habits in a separate `.githabits.yaml` file.
+- **Gated project automation:** optional GitHub remote creation, SemVer tagging, GitHub Pages Actions workflow generation, and release steps remain explicit and approval-gated.
 - **Ready-to-use Python examples:** every GoF pattern reference includes a compact, syntax-validated implementation example that is loaded only when the pattern is relevant or the user requests it.
 - **Deterministic local core:** reusable Python functions validate contracts, scan generated artifacts, and analyze supported boundaries. Codex invokes required write checks through short-lived hooks; an optional STDIO MCP adapter remains available for compatible future hosts.
 - **Portable source of truth:** stores accepted architecture state as reviewable Markdown and YAML rather than in a proprietary service.
@@ -162,8 +164,11 @@ ai-software-architect/
 │   ├── schemas/                # Pydantic contracts and generated JSON Schemas
 │   └── evaluations/            # Gherkin criteria and reusable exploratory fixtures
 ├── evaluation-data/            # Versioned exploratory timing history and import evidence
+├── cmd/                        # Go ai-architect CLI and STDIO MCP entrypoints
+├── internal/architect/         # Go scaffold, ADR, contract, evidence, and Git core
+├── internal/mcpserver/         # Bounded read-only MCP adapter
 ├── tools/
-│   └── python-mcp/             # Deterministic domain tools, CLI, and optional MCP adapter
+│   └── python-mcp/             # Compatibility domain tools and legacy MCP adapter
 ├── tests/                      # Cross-cutting conformance and packaging tests
 ├── demo/                       # Reproducible end-to-end architecture workflow
 ├── specs/                      # Approved product and security specification
@@ -172,7 +177,9 @@ ai-software-architect/
 ├── assets/                     # Project artwork and Codex plugin icon
 ├── .github/                    # CI, CodeQL, release, and dependency automation
 ├── CHANGELOG.md                # User-facing release history
-├── pyproject.toml              # uv workspace and development tooling
+├── Makefile                    # Go build, test, vet, questions, and MCP targets
+├── go.mod                      # Go 1.26+ module for the consolidated core
+├── pyproject.toml              # Compatibility uv workspace and plugin tooling
 └── uv.lock                     # Reproducible locked dependency resolution
 ```
 
@@ -298,14 +305,14 @@ permissions, tool execution, and the actual filesystem writes.
 
 - A Codex version that supports plugins, Agent Skills, and hooks. Subagent support is optional; the workflow falls back to the main agent when unavailable.
 - All five lifecycle hooks explicitly reviewed and activated from the plugin page before first use.
-- Windows x86-64 for the initial packaged runtime.
+- Windows x86-64 or macOS Apple Silicon (aarch64-darwin) for the packaged runtime.
 - A Codex account and model allocation.
 - No separate OpenAI API key, Python installation, `uv`, virtual environment, or first-run dependency download.
 
 #### Install a Published Release
 
-Users should download the prebuilt Windows x86-64 marketplace
-bundle from the project's GitHub Release and follow
+Users should download the prebuilt marketplace bundle matching their platform
+from the project's GitHub Release and follow
 [`docs/INSTALL_CODEX_PLUGIN.md`](docs/INSTALL_CODEX_PLUGIN.md). The extracted
 bundle contains its own repository marketplace and complete self-contained
 plugin; users do not run the development build or personal-marketplace copy
@@ -393,13 +400,16 @@ for people with repository access now and for everyone after the GitHub
 repository is made public:
 
 - [`hooks.json`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/templates/hooks.json) declares the five events, the exact local command, and their timeouts.
-- [`hook_entry.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_entry.py) reads the bounded event payload, manages minimal temporary state, and returns the hook decision.
+- [`hook_entry.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_entry.py) validates the bounded event payload, dispatches typed events, and renders the hook decision.
 - [`hook_models.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_models.py) validates stable hook payload fields before dispatch.
+- [`hook_lifecycle.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/hook_lifecycle.py) owns the ordered lifecycle transitions and typed outcomes for all five hook events.
+- [`activation_policy.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/activation_policy.py), [`tool_policy.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/tool_policy.py), and [`response_policy.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/response_policy.py) contain focused pure control-plane policy.
+- [`state_store.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/state_store.py) provides file-backed production state and an in-memory lifecycle-test adapter.
 - [`repository_snapshot.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/repository_snapshot.py) implements the bounded, non-executing, one-shot repository evidence helper.
 - [`continuation.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/continuation.py) stores typed, single-use continuation and compaction-safe workflow checkpoints.
 - [`renderers.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/renderers.py) provides deterministic YAML and comparison rendering from validated Pydantic objects.
-- [`control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/control_plane.py) contains the pure routing, tool-denial, and response-validation rules.
 - [`test_codex_control_plane.py`](https://github.com/leomuf/ai-software-architect/blob/main/tests/packaging/test_codex_control_plane.py) verifies activation, allowed and denied behavior, one-skill routing boundaries, correction limits, and privacy constraints.
+- [`test_codex_hook_lifecycle.py`](https://github.com/leomuf/ai-software-architect/blob/main/tests/packaging/test_codex_hook_lifecycle.py) verifies lifecycle transitions, state adapters, expiry, checkpoint restoration, and fail-closed artifact handling.
 - [`artifact_guard.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/artifact_guard.py) reconstructs and validates the complete proposed architecture artifact bundle as one pre-write unit.
 - [`smoke_test_runtime.py`](https://github.com/leomuf/ai-software-architect/blob/main/adapters/codex/smoke_test_runtime.py) launches the packaged command exactly as Codex does and checks activation, write guards, validation, scanning, and response checks before release.
 
@@ -442,7 +452,8 @@ The current build and packaging commands target the implemented Codex adapter.
 - Git.
 - [uv](https://docs.astral.sh/uv/) `0.11.x`.
 - Python `3.13.12`, as recorded in [`.python-version`](.python-version). `uv` can provision it.
-- Windows x86-64 to build and smoke-test the initial self-contained runtime.
+- Windows x86-64 or native Apple Silicon macOS to build and smoke-test the
+  self-contained runtime.
 
 ### Setup and Validation
 
@@ -497,6 +508,28 @@ The script prints the generated version and package path. To build a particular
 version, add `-PluginVersion 0.1.0-beta.1`. The version is written before
 provenance hashes are generated; never change the generated manifest or
 recalculate provenance afterward.
+
+On Apple Silicon macOS, build the native `aarch64-darwin` package directly:
+
+```bash
+uv run python adapters/codex/build_plugin.py \
+  --build-runtime \
+  --target aarch64-darwin \
+  --plugin-version 0.2.3+codex.local
+uv run python adapters/codex/validate_plugin.py \
+  --target aarch64-darwin \
+  dist/codex/ai-software-architect
+uv run python adapters/codex/smoke_test_runtime.py \
+  dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
+```
+
+Package the macOS artifact with:
+
+```bash
+uv run python scripts/package_codex_release.py \
+  --target aarch64-darwin \
+  --plugin-version 0.2.3
+```
 
 For a faster rebuild after skill, reference, template, plugin-metadata, icon, or
 packaged-notice-only changes, reuse the existing reviewed runtime:

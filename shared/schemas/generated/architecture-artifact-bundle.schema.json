@@ -115,6 +115,17 @@
     "ArchitectureDecision": {
       "additionalProperties": false,
       "properties": {
+        "action_contract": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionActionContract"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "assumptions": {
           "items": {
             "maxLength": 2000,
@@ -141,11 +152,32 @@
           "title": "Context",
           "type": "string"
         },
+        "date": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date"
+        },
         "decision": {
           "maxLength": 20000,
           "minLength": 1,
           "title": "Decision",
           "type": "string"
+        },
+        "decision_matrix": {
+          "items": {
+            "$ref": "#/$defs/DecisionMatrixRow"
+          },
+          "maxItems": 5,
+          "title": "Decision Matrix",
+          "type": "array"
         },
         "drivers": {
           "items": {
@@ -162,6 +194,17 @@
           "pattern": "^ADR-[0-9]{3}$",
           "title": "Id",
           "type": "string"
+        },
+        "motivation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionMotivation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "negative_consequences": {
           "items": {
@@ -201,6 +244,7 @@
             "proposed",
             "accepted",
             "rejected",
+            "deprecated",
             "superseded"
           ],
           "title": "Status",
@@ -359,6 +403,193 @@
         "responsibility"
       ],
       "title": "Component",
+      "type": "object"
+    },
+    "DecisionActionContract": {
+      "additionalProperties": false,
+      "properties": {
+        "bad_outcomes": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Bad Outcomes",
+          "type": "array"
+        },
+        "correct_example": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Correct Example",
+          "type": "string"
+        },
+        "good_outcomes": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Good Outcomes",
+          "type": "array"
+        },
+        "incorrect_example": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Incorrect Example",
+          "type": "string"
+        }
+      },
+      "required": [
+        "good_outcomes",
+        "bad_outcomes",
+        "correct_example",
+        "incorrect_example"
+      ],
+      "title": "DecisionActionContract",
+      "type": "object"
+    },
+    "DecisionMatrixRow": {
+      "additionalProperties": false,
+      "properties": {
+        "benefits": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Benefits",
+          "type": "array"
+        },
+        "drawbacks": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Drawbacks",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fit_score": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Fit Score",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^OPT-[0-9]{3}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "proposed",
+            "accepted",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "risks": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Risks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "fit_score",
+        "benefits",
+        "drawbacks",
+        "risks",
+        "evidence",
+        "outcome"
+      ],
+      "title": "DecisionMatrixRow",
+      "type": "object"
+    },
+    "DecisionMotivation": {
+      "additionalProperties": false,
+      "properties": {
+        "alternatives": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Alternatives",
+          "type": "string"
+        },
+        "audience": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Audience",
+          "type": "string"
+        },
+        "problem": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Problem",
+          "type": "string"
+        },
+        "source": {
+          "default": "human",
+          "enum": [
+            "human",
+            "auto-reasoned"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "why_building": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Why Building",
+          "type": "string"
+        },
+        "why_this_solution": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Why This Solution",
+          "type": "string"
+        }
+      },
+      "required": [
+        "why_building",
+        "problem",
+        "audience",
+        "alternatives",
+        "why_this_solution"
+      ],
+      "title": "DecisionMotivation",
       "type": "object"
     },
     "DependencyRule": {

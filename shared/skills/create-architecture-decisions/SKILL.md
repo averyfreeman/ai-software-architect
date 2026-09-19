@@ -10,18 +10,19 @@ SPDX-License-Identifier: MIT
 
 # Create Architecture Decisions
 
-1. Present the recommendation, drivers, trade-offs, uncertainty, alternatives, and validation criteria.
-2. Ask the user to approve, revise, or provide more information. Do not infer approval from silence.
-3. Assign stable `OPT-NNN` and `ADR-NNN` identifiers without reusing identifiers.
-4. After approval and before drafting, load the exact bundled ADR template, contract example, ADR-authoring reference, and implementation-plan template. A host adapter may provide these four canonical sources as one generated bundle; when it does, load that bundle once instead of reading the sources separately. Treat their nested object shapes and required output paths as authoritative and never infer list-item shapes or filenames from field names or model memory. The durable paths are `.ai-architect/project-context.md`, `.ai-architect/architecture-contract.yaml`, `.ai-architect/implementation-plan.md`, and `.ai-architect/decisions/ADR-NNN[-slug].md`; do not invent alternate handoff filenames. The contract example demonstrates all dependency policies: `allow-via-interface` requires `via_interface`, while `allow` and `deny` must omit it. Then create schema-valid ADR frontmatter and an architecture contract whose references resolve to accepted ADRs and declared components.
-5. Submit complete candidates to the active host adapter's deterministic pre-write
+1. Ask or retrieve the five mandatory motivation answers: why building, problem, audience, existing alternatives, and why this solution can solve what they cannot. If the user opted into auto-reason, mark provisional fields as agent-generated and warn about human review.
+2. Present the recommendation, drivers, trade-offs, uncertainty, alternatives, and validation criteria.
+3. Ask the user to approve, revise, or provide more information. Do not infer approval from silence.
+4. Assign stable `OPT-NNN` and `ADR-NNN` identifiers without reusing identifiers.
+5. After approval and before drafting, load the exact bundled ADR template, contract example, ADR-authoring reference, and implementation-plan template. A host adapter may provide these four canonical sources as one generated bundle; when it does, load that bundle once instead of reading the sources separately. Treat their nested object shapes and required output paths as authoritative and never infer list-item shapes or filenames from field names or model memory. The durable paths are `.ai-architect/project-context.md`, `.ai-architect/architecture-contract.yaml`, `.ai-architect/implementation-plan.md`, and `.ai-architect/decisions/ADR-NNN[-slug].md`; do not invent alternate handoff filenames. The contract example demonstrates all dependency policies: `allow-via-interface` requires `via_interface`, while `allow` and `deny` must omit it. Then create schema-valid ADR frontmatter and an architecture contract whose references resolve to accepted ADRs and declared components.
+6. Submit complete candidates to the active host adapter's deterministic pre-write
    validation. In Codex, the trusted `PreToolUse` hook reconstructs the proposal,
    validates the complete `ArchitectureArtifactBundle`, and scans every generated
    artifact before the write. The `PostToolUse` hook verifies that the persisted
    bundle matches the validated candidates. A denied or unavailable validation must
    never be reported as success.
-6. Strip the source-template SPDX comment from user-owned generated artifacts.
-7. Follow the orchestration skill's concurrent-edit and atomic multi-file update protocol.
+7. Strip the source-template SPDX comment from user-owned generated artifacts.
+8. Follow the orchestration skill's concurrent-edit and atomic multi-file update protocol.
 
 ## Resources
 

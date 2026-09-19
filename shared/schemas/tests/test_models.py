@@ -8,6 +8,7 @@ from ai_architect_schemas import (
     ArchitectureArtifactBundle,
     ArchitectureContract,
     ArchitectureDecision,
+    ArchitectureDecisionArtifact,
     ArchitectureOptionComparison,
     ArtifactSecretScanResult,
     DependencyAnalysisInput,
@@ -81,6 +82,65 @@ def test_artifact_bundle_requires_exact_accepted_contract_decisions() -> None:
                 "coding_handoff": "# Handoff",
             }
         )
+
+
+def test_current_decision_contract_requires_motivation_matrix_and_action_examples() -> None:
+    decision = {
+        "schema_version": "1.1.0",
+        "revision": 1,
+        "decision": {
+            "id": "ADR-001",
+            "title": "Choose a boundary",
+            "date": "2026-09-17",
+            "status": "proposed",
+            "motivation": {
+                "why_building": "Keep the boundary explicit.",
+                "problem": "Chat history is not durable.",
+                "audience": "Agents and maintainers.",
+                "alternatives": "A wiki or ticket.",
+                "why_this_solution": "Local validated records travel with code.",
+                "source": "human",
+            },
+            "context": "A boundary is required.",
+            "drivers": ["Testability"],
+            "considered_option_ids": ["OPT-001", "OPT-002"],
+            "decision": "Use one explicit boundary.",
+            "validation_criteria": ["Boundary tests pass."],
+            "decision_matrix": [
+                {
+                    "id": "OPT-001",
+                    "name": "Explicit boundary",
+                    "fit_score": 90,
+                    "benefits": ["Clear ownership."],
+                    "drawbacks": ["More ceremony."],
+                    "risks": ["Adoption lag."],
+                    "evidence": ["Existing module layout."],
+                    "outcome": "proposed",
+                },
+                {
+                    "id": "OPT-002",
+                    "name": "Implicit boundary",
+                    "fit_score": 40,
+                    "benefits": ["Less setup."],
+                    "drawbacks": ["Harder review."],
+                    "risks": ["Drift."],
+                    "evidence": ["Prior incidents."],
+                    "outcome": "rejected",
+                },
+            ],
+            "action_contract": {
+                "good_outcomes": ["Ownership remains clear."],
+                "bad_outcomes": ["Dependencies cross the boundary."],
+                "correct_example": "Call the public interface.",
+                "incorrect_example": "Import the implementation directly.",
+            },
+        },
+    }
+    artifact = ArchitectureDecisionArtifact.model_validate(decision)
+    assert artifact.decision.motivation is not None
+    decision["decision"].pop("motivation")
+    with pytest.raises(ValidationError, match="require motivation"):
+        ArchitectureDecisionArtifact.model_validate(decision)
 
 
 def test_contract_rejects_dependency_to_unknown_component() -> None:

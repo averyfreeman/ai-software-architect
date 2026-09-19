@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 from ai_architect_schemas import ArchitectureContract
 
-from adapters.codex.control_plane import REFERENCE_SPECS
+from adapters.codex.activation_policy import REFERENCE_SPECS
 from adapters.codex.reference_catalog import REFERENCE_CATALOG
 
 ROOT = Path(__file__).resolve().parents[2]

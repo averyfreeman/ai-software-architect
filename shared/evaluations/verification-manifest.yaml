@@ -61,6 +61,7 @@ scenarios:
   MCP-004: {mode: deterministic-test, gate: GATE-SECURITY}
   MCP-005: {mode: scripted-host-test, gate: GATE-WORKSPACE}
   MCP-006: {mode: scripted-host-test, gate: GATE-PLUGIN}
+  MCP-007: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-001: {mode: deterministic-test, gate: GATE-SECURITY}
   SEC-002: {mode: model-evaluation, gate: GATE-SECURITY}
   SEC-003: {mode: deterministic-test, gate: GATE-SECURITY}

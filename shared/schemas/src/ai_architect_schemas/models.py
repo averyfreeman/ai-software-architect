@@ -20,6 +20,7 @@ RelativePathText = Annotated[str, Field(min_length=1, max_length=240)]
 ShortText = Annotated[str, Field(min_length=1, max_length=500)]
 EvidenceText = Annotated[str, Field(min_length=1, max_length=2_000)]
 NarrativeText = Annotated[str, Field(min_length=1, max_length=20_000)]
+DateText = Annotated[str, Field(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")]
 PatternCategory = Literal[
     "GoF",
     "Architecture",
@@ -187,10 +188,39 @@ class ArchitectureOptionComparison(StrictModel):
         return self
 
 
+class DecisionMotivation(StrictModel):
+    why_building: EvidenceText
+    problem: EvidenceText
+    audience: EvidenceText
+    alternatives: EvidenceText
+    why_this_solution: EvidenceText
+    source: Literal["human", "auto-reasoned"] = "human"
+
+
+class DecisionMatrixRow(StrictModel):
+    id: OptionId
+    name: ShortText
+    fit_score: int = Field(ge=0, le=100)
+    benefits: list[EvidenceText] = Field(min_length=1, max_length=20)
+    drawbacks: list[EvidenceText] = Field(min_length=1, max_length=20)
+    risks: list[EvidenceText] = Field(min_length=1, max_length=20)
+    evidence: list[EvidenceText] = Field(min_length=1, max_length=20)
+    outcome: Literal["proposed", "accepted", "rejected"]
+
+
+class DecisionActionContract(StrictModel):
+    good_outcomes: list[EvidenceText] = Field(min_length=1, max_length=20)
+    bad_outcomes: list[EvidenceText] = Field(min_length=1, max_length=20)
+    correct_example: EvidenceText
+    incorrect_example: EvidenceText
+
+
 class ArchitectureDecision(StrictModel):
     id: ADRId
     title: ShortText
-    status: Literal["proposed", "accepted", "rejected", "superseded"]
+    status: Literal["proposed", "accepted", "rejected", "deprecated", "superseded"]
+    date: DateText | None = None
+    motivation: DecisionMotivation | None = None
     context: NarrativeText
     drivers: list[EvidenceText] = Field(min_length=1, max_length=30)
     considered_option_ids: list[OptionId] = Field(min_length=1, max_length=5)
@@ -201,6 +231,8 @@ class ArchitectureDecision(StrictModel):
     assumptions: list[EvidenceText] = Field(default_factory=list, max_length=30)
     validation_criteria: list[EvidenceText] = Field(min_length=1, max_length=30)
     supersedes: list[ADRId] = Field(default_factory=list, max_length=100)
+    decision_matrix: list[DecisionMatrixRow] = Field(default_factory=list, max_length=5)
+    action_contract: DecisionActionContract | None = None
 
     @model_validator(mode="after")
     def validate_option_selection(self) -> Self:
@@ -219,6 +251,21 @@ class ArchitectureDecisionArtifact(StrictModel):
     schema_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
     revision: int = Field(ge=1)
     decision: ArchitectureDecision
+
+    @model_validator(mode="after")
+    def validate_current_decision_contract(self) -> Self:
+        if self.schema_version == "1.1.0":
+            if self.decision.date is None:
+                raise ValueError("schema version 1.1.0 decisions require date")
+            if self.decision.motivation is None:
+                raise ValueError("schema version 1.1.0 decisions require motivation")
+            if len(self.decision.decision_matrix) < 2:
+                raise ValueError(
+                    "schema version 1.1.0 decisions require at least two matrix options"
+                )
+            if self.decision.action_contract is None:
+                raise ValueError("schema version 1.1.0 decisions require an action_contract")
+        return self
 
 
 class Component(StrictModel):
@@ -393,8 +440,8 @@ class CompleteContractValidationInput(ContractValidationInput):
 
 
 class DecisionListInput(StrictModel):
-    statuses: list[Literal["proposed", "accepted", "rejected", "superseded"]] = Field(
-        default_factory=list, max_length=4
+    statuses: list[Literal["proposed", "accepted", "rejected", "deprecated", "superseded"]] = Field(
+        default_factory=list, max_length=5
     )
 
 

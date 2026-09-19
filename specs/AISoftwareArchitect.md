@@ -205,6 +205,32 @@ The deterministic core and every enabled transport MUST:
 
 All architectural interpretation, clarification, option generation, trade-off analysis, and recommendation remains host-native model reasoning.
 
+### Staged Go consolidation
+
+The agent-facing project scaffold and deterministic architecture domain are being
+consolidated into a Go 1.26+ module. The supported executable name is
+`ai-architect`, which replaces the ambiguous standalone `adr` binary name. Its
+`questions` and `setup` commands are designed for a host agent to ask the human
+the required project questions and then submit typed answers; direct invocation
+is still possible for diagnostics, but it is not a replacement for approval.
+
+The Go implementation owns the new `.adr-scaffold.yaml`, `.githabits.yaml`,
+`.ai-architect/` project artifacts, mandatory five-field decision motivation,
+decision matrix, action-contract examples, JSON decision index, bounded static
+dependency evidence, secret scanning, GitHub Pages workflow generation, atomic
+four-artifact bundle validation, and approval-gated Git/`gh` planning. It exposes
+a separate read-only STDIO MCP adapter using the official Go SDK. The MCP surface
+accepts bounded inline source, fixed project-relative decision reads, or a
+complete in-memory artifact bundle; it does not execute code, use a network, or
+write files.
+
+The Python schemas, Codex hook runtime, packaging path, and legacy Python MCP
+adapter remain compatibility implementations during staged parity. The Python
+surface MUST NOT be removed until Go contract parity, clean-machine packaging,
+Codex lifecycle behavior, and like-for-like evaluation gates pass. Until then,
+the Go source is the preferred new CLI/domain path and the Python source remains
+the installed Codex compatibility path.
+
 ## Goals
 
 - Make architectural decisions explicit before substantial code generation.
@@ -475,7 +501,8 @@ User's coding assistant
         +-- platform-specific agent profile or orchestration skill
         +-- shared modular skills or a generated host Composite
         +-- native repository and shell tools
-        +-- local Python STDIO MCP server
+        +-- local Go STDIO MCP server (preferred new path)
+        +-- local Python STDIO MCP server (compatibility path)
         |
         v
 Repository-based architecture artifacts
@@ -505,10 +532,17 @@ ai-software-architect/
 │   └── evaluations/                # Gherkin, verification map, and shared fixtures
 ├── tools/
 │   └── python-mcp/                 # Deterministic core, CLI, and optional MCP adapter
+├── cmd/                            # Go ai-architect CLI and STDIO MCP entrypoints
+├── internal/architect/             # Go scaffold, ADR, contract, evidence, and Git core
+├── internal/mcpserver/             # Bounded read-only Go MCP adapter
 ├── adapters/
 │   ├── codex/
-│   │   ├── control_plane.py        # Deterministic workflow policy
-│   │   ├── hook_entry.py           # Codex lifecycle entry point
+│   │   ├── hook_lifecycle.py       # Typed Codex hook lifecycle
+│   │   ├── hook_entry.py           # Codex edge adapter
+│   │   ├── activation_policy.py    # Activation and context policy
+│   │   ├── tool_policy.py          # Fail-closed tool policy
+│   │   ├── response_policy.py      # Visible-response policy
+│   │   ├── state_store.py          # File and in-memory state adapters
 │   │   ├── artifact_guard.py       # Architecture-artifact write validation
 │   │   ├── reference_catalog.json  # Generated canonical-reference index
 │   │   ├── evaluations/            # Codex exploratory runner and grader
@@ -521,6 +555,7 @@ ai-software-architect/
 ├── specs/                          # Approved product and security specification
 ├── docs/                           # Installation, release, and demo documentation
 ├── scripts/                        # Build, package, release, and evaluation entry points
+├── Makefile                        # Go build, test, vet, questions, and MCP targets
 ├── assets/                         # Project artwork and plugin icon
 ├── .github/                        # CI, CodeQL, release, and dependency automation
 ├── pyproject.toml                  # uv workspace and development tooling
@@ -784,12 +819,15 @@ Provides a stable machine-readable summary of accepted architecture decisions. V
 Each material decision records:
 
 - status;
+- the five mandatory motivation answers: why building, problem, audience, existing alternatives, and why this solution can solve problems they cannot;
 - context;
 - decision drivers;
 - considered options;
+- a comparable decision matrix with ordinal fit, benefits, drawbacks, risks, and evidence;
 - decision;
 - positive and negative consequences;
 - assumptions;
+- good and bad action outcomes plus one correct and one incorrect action example;
 - validation criteria;
 - superseded decisions.
 
@@ -809,7 +847,7 @@ Repository artifacts are user-owned, reviewable project state. Before modifying 
 
 After the host write, `PostToolUse` compares every persisted artifact with the prevalidated candidates and records completion only when they match exactly. A rejected, failed, partial, or changed write MUST NOT be reported as successful. The first release does not claim a cross-filesystem transaction, automatic rollback, or a general concurrent-edit merge facility; host patch context provides conflict detection where supported. Stronger hash-based concurrency checks, staging, atomic replacement, and rollback are future hardening work.
 
-The contract `revision` is incremented for every accepted contract change. Re-running the same approved update MUST NOT silently create duplicate ADR identifiers. Control-plane checkpoints, continuations, and validation metadata remain under Codex-managed `PLUGIN_DATA`, never under `.ai-architect/`. The optional MCP server remains read-only and does not participate in artifact writes.
+The contract `revision` is incremented for every accepted contract change. Re-running the same approved update MUST NOT silently create duplicate ADR identifiers. Control-plane checkpoints, continuations, and validation metadata remain under Codex-managed `PLUGIN_DATA`, never under `.ai-architect/`. The optional MCP server remains read-only and does not participate in artifact writes. The staged Go CLI additionally maintains `.ai-architect/decisions/index.json` as a generated retrieval index; source ADR files remain authoritative.
 
 ## Core Data Schema and Structured Outputs
 
@@ -2775,6 +2813,16 @@ Feature: Shared deterministic tools and optional MCP transport
     Then no AI Software Architect runtime process remains
     And the Codex package contains no persistent MCP configuration
     And Codex can uninstall the plugin on the first attempt without manual process termination
+
+  @MCP-007
+  Scenario: A compatible host validates a complete architecture bundle before persistence
+    Given a compatible host has explicitly enabled the read-only Go STDIO MCP adapter
+    When the host calls "validate_architecture_bundle" with one contract, accepted ADRs, project context, and coding handoff
+    Then the result is valid only when the ADR identifiers exactly match the contract "decision_ids"
+    And every supplied ADR has accepted status and passes the current ADR contract
+    And bounded context and handoff content is scanned for secret-like values
+    And diagnostics return finding categories and locations without returning suspected secret values
+    And the tool does not write files, execute repository code, use a network, or accept a workspace-root override
 
 Feature: Security and scope guardrails
 

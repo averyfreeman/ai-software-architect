@@ -1,6 +1,6 @@
 # Merge action plan: agent-first architecture scaffold
 
-Status: Git BBQ lifecycle slices 1–11 are published through `git-bbq-v0.1.10`;
+Status: Git BBQ lifecycle slices 1–12 are published through `git-bbq-v0.1.11`;
 the staged Go migration remains in progress. The roadmap has a fixed 17-slice
 denominator: completed work reduces the remaining count; it never adds a new
 slice merely because implementation details become visible.
@@ -28,19 +28,19 @@ so it is retired. The active ledger is:
 | GBBQ-09 | Release progression and observed-tag protection | Complete: `git-bbq-v0.1.8` |
 | GBBQ-10 | Approval-gated GitHub provider provisioning | Complete: `git-bbq-v0.1.9` |
 | M-11 | Python deterministic domains and Codex hook/control-plane parity | Complete: `git-bbq-v0.1.10` |
+| M-12 | Fixture parity for contracts, protected paths, Windows behavior, and hook protocol | Complete: `git-bbq-v0.1.11` |
 
-The next active slice is `M-12`, fixture parity for contracts, protected paths,
-Windows behavior, and hook protocol. It is already counted below.
+The next active slice is `M-13`, Go-based Codex packaging, release, notices,
+and clean-machine install tests. It is already counted below.
 
-Six concrete slices remain after `M-11`. This count is the fixed remainder
+Five concrete slices remain after `M-12`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
 
-1. `M-12` Fixture parity for contracts, protected paths, Windows behavior, and hook protocol.
-2. `M-13` Go-based Codex packaging, release, notices, and clean-machine install tests.
-3. `M-14` Remaining legacy scaffold language profiles and migration command.
-4. `M-15` Exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
-5. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
-6. `M-17` Python runtime retirement after every preceding gate passes.
+1. `M-13` Go-based Codex packaging, release, notices, and clean-machine install tests.
+2. `M-14` Remaining legacy scaffold language profiles and migration command.
+3. `M-15` Exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
+4. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
+5. `M-17` Python runtime retirement after every preceding gate passes.
 
 ## Outcome implemented in this slice
 

@@ -378,6 +378,16 @@ Feature: Shared deterministic tools and optional MCP transport
     And the Codex package contains no persistent MCP configuration
     And Codex can uninstall the plugin on the first attempt without manual process termination
 
+  @MCP-007
+  Scenario: A compatible host validates a complete architecture bundle before persistence
+    Given a compatible host has explicitly enabled the read-only Go STDIO MCP adapter
+    When the host calls "validate_architecture_bundle" with one contract, accepted ADRs, project context, and coding handoff
+    Then the result is valid only when the ADR identifiers exactly match the contract "decision_ids"
+    And every supplied ADR has accepted status and passes the current ADR contract
+    And bounded context and handoff content is scanned for secret-like values
+    And diagnostics return finding categories and locations without returning suspected secret values
+    And the tool does not write files, execute repository code, use a network, or accept a workspace-root override
+
 Feature: Security and scope guardrails
 
   @SEC-001
