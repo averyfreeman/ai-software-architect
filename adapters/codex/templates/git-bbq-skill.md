@@ -33,7 +33,8 @@ push planning. When `remote.url` is present and the remote is still pending, the
 remote action is limited to `git remote add`; successful approved execution
 persists `remote.status: configured`. To perform one approved action, pass the same inputs to
 `git-bbq githabits execute --approve`; the executor invokes Git without a shell,
-rejects force flags, and applies a bounded timeout.
+rejects force flags, and applies a bounded timeout. Tag and push only after
+reviewing their plans and confirming the configured remote.
 
 ADRs use the Matt-native sequential format in `docs/adr/NNNN-slug.md`. Do not
 create a second ADR directory or put native structured metadata into an ADR.

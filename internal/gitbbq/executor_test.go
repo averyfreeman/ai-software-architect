@@ -210,3 +210,78 @@ func TestExecuteGitPlanAddsPendingRemote(t *testing.T) {
 		t.Fatalf("remote URL = %q", got)
 	}
 }
+
+func TestExecuteGitPlanPushesCommitToConfiguredRemote(t *testing.T) {
+	workspace := t.TempDir()
+	bareRemote := filepath.Join(t.TempDir(), "remote.git")
+	if err := exec.Command("git", "init", "--bare", "-q", bareRemote).Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Remote.Status = "configured"
+	config.Remote.URL = bareRemote
+	runner := OSGitRunner{Timeout: time.Second}
+
+	initPlan, err := PlanGitAction(config, GitActionInit, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, initPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	branchPlan, err := PlanGitAction(config, GitActionBranch, GitPlanRequest{Branch: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, branchPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runner.Run(workspace, []string{"git", "config", "user.email", "git-bbq@example.invalid"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runner.Run(workspace, []string{"git", "config", "user.name", "Git BBQ Test"}); err != nil {
+		t.Fatal(err)
+	}
+
+	pendingConfig := config
+	pendingConfig.Remote.Status = "pending"
+	remotePlan, err := PlanGitAction(pendingConfig, GitActionRemote, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(pendingConfig, workspace, remotePlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspace, "README.md"), []byte("push tracer\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stagePlan, err := PlanGitAction(config, GitActionStage, GitPlanRequest{Paths: []string{"README.md"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, stagePlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	commitPlan, err := PlanGitAction(config, GitActionCommit, GitPlanRequest{Message: "feat: add push tracer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, commitPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	pushPlan, err := PlanGitAction(config, GitActionPush, GitPlanRequest{Branch: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, pushPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := exec.Command("git", "--git-dir", bareRemote, "show-ref", "--verify", "refs/heads/main").Output(); err != nil {
+		t.Fatal(err)
+	}
+}

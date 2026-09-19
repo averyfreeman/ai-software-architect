@@ -65,6 +65,8 @@ git-bbq githabits execute --approve --action init --json
 git-bbq githabits execute --approve --action branch --branch feature/git-bbq --json
 git-bbq githabits execute --approve --action remote --json
 git-bbq githabits execute --approve --action commit --message "feat: record architecture decision" --json
+git-bbq githabits execute --approve --action tag --tag v0.1.1 --json
+git-bbq githabits execute --approve --action push --branch main --json
 ```
 
 Plans render argument-separated Git commands and report whether `.githabits.yaml`
