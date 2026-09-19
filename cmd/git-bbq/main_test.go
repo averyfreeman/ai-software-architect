@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/averyfreeman/git-bbq/internal/gitbbq"
@@ -38,5 +39,30 @@ func TestRunGithabitsExecutePersistsConfiguredRemote(t *testing.T) {
 	}
 	if persisted.Remote.Status != "configured" {
 		t.Fatalf("remote status = %q", persisted.Remote.Status)
+	}
+}
+
+func TestRunGithabitsPlanRejectsOlderObservedTag(t *testing.T) {
+	root := t.TempDir()
+	config, err := gitbbq.GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, gitbbq.GitHabitsFilename), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runGithabitsPlan([]string{
+		"--action", "tag",
+		"--tag", "v0.1.0",
+		"--existing-tag", "v0.1.1",
+		root,
+		"--json",
+	}); err == nil || !strings.Contains(err.Error(), "not newer") {
+		t.Fatalf("older observed tag error = %v", err)
 	}
 }

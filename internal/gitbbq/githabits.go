@@ -13,10 +13,11 @@ var semanticVersionTagPattern = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][
 // GitPlanRequest contains the values needed to render one Git action preview.
 // It deliberately carries data, not permission; approval remains a host concern.
 type GitPlanRequest struct {
-	Branch  string
-	Message string
-	Tag     string
-	Paths   []string
+	Branch       string
+	Message      string
+	Tag          string
+	Paths        []string
+	ExistingTags []string
 }
 
 // GitPlan is the read-only result of applying githabits policy to one action.
@@ -90,6 +91,9 @@ func PlanGitAction(config GitHabits, action GitAction, request GitPlanRequest) (
 		}
 		if config.Versioning == "semver" && !safeSemanticVersionTag(tag) {
 			return GitPlan{}, fmt.Errorf("tag does not follow the configured semver convention: %q", tag)
+		}
+		if err := ValidateTagProgression(request.ExistingTags, tag); err != nil {
+			return GitPlan{}, err
 		}
 		plan.Command = []string{"git", "tag", "-a", tag, "-m", tag}
 	case GitActionPush:

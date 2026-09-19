@@ -398,6 +398,8 @@ func runGithabitsPlan(args []string) error {
 	jsonOutput := fs.Bool("json", false, "emit JSON")
 	var paths stringList
 	fs.Var(&paths, "path", "repository-relative path to stage; repeat or comma-separate")
+	var existingTags stringList
+	fs.Var(&existingTags, "existing-tag", "observed SemVer tag; repeat or comma-separate")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -413,10 +415,11 @@ func runGithabitsPlan(args []string) error {
 		return err
 	}
 	plan, err := gitbbq.PlanGitAction(config, gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action))), gitbbq.GitPlanRequest{
-		Branch:  *branch,
-		Message: *message,
-		Tag:     *tag,
-		Paths:   paths,
+		Branch:       *branch,
+		Message:      *message,
+		Tag:          *tag,
+		Paths:        paths,
+		ExistingTags: existingTags,
 	})
 	if err != nil {
 		return err
@@ -435,6 +438,8 @@ func runGithabitsExecute(args []string) error {
 	jsonOutput := fs.Bool("json", false, "emit JSON")
 	var paths stringList
 	fs.Var(&paths, "path", "repository-relative path to stage; repeat or comma-separate")
+	var existingTags stringList
+	fs.Var(&existingTags, "existing-tag", "observed SemVer tag; repeat or comma-separate")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -453,10 +458,11 @@ func runGithabitsExecute(args []string) error {
 		return err
 	}
 	plan, err := gitbbq.PlanGitAction(config, gitbbq.GitAction(strings.ToLower(strings.TrimSpace(*action))), gitbbq.GitPlanRequest{
-		Branch:  *branch,
-		Message: *message,
-		Tag:     *tag,
-		Paths:   paths,
+		Branch:       *branch,
+		Message:      *message,
+		Tag:          *tag,
+		Paths:        paths,
+		ExistingTags: existingTags,
 	})
 	if err != nil {
 		return err

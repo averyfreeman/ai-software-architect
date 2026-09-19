@@ -23,7 +23,7 @@ git-bbq githabits plan --action branch --branch feature/git-bbq --json
 git-bbq githabits plan --action remote --json
 git-bbq githabits plan --action stage --path path/to/reviewed-file --json
 git-bbq githabits plan --action commit --message "feat: explain the change" --json
-git-bbq githabits plan --action tag --tag v0.1.1 --json
+git-bbq githabits plan --action tag --tag v0.1.1 --existing-tag v0.1.0 --json
 git-bbq githabits plan --action push --branch main --json
 ```
 
@@ -36,6 +36,8 @@ persists `remote.status: configured`. To perform one approved action, pass the s
 rejects force flags, and applies a bounded timeout. Tag and push only after
 reviewing their plans and confirming the configured remote. SemVer profiles use
 `vMAJOR.MINOR.PATCH` tags, optionally followed by prerelease or build metadata.
+Pass observed release tags with repeated `--existing-tag` flags so planning can
+reject duplicate or non-monotonic releases.
 
 ADRs use the Matt-native sequential format in `docs/adr/NNNN-slug.md`. Do not
 create a second ADR directory or put native structured metadata into an ADR.

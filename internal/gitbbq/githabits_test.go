@@ -90,6 +90,20 @@ func TestPlanGitActionRejectsNonSemverTag(t *testing.T) {
 	}
 }
 
+func TestPlanGitActionRejectsNonMonotonicTag(t *testing.T) {
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := PlanGitAction(config, GitActionTag, GitPlanRequest{
+		Tag:          "v0.1.0",
+		ExistingTags: []string{"v0.1.1"},
+	}); err == nil {
+		t.Fatal("older tag was accepted after a newer existing tag")
+	}
+}
+
 func TestPlanGitActionBuildsPushCommandForConfiguredRemote(t *testing.T) {
 	config, err := GitHabitsForProfile("autonomous")
 	if err != nil {
