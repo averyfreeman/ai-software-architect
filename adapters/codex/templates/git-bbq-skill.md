@@ -34,7 +34,8 @@ remote action is limited to `git remote add`; successful approved execution
 persists `remote.status: configured`. To perform one approved action, pass the same inputs to
 `git-bbq githabits execute --approve`; the executor invokes Git without a shell,
 rejects force flags, and applies a bounded timeout. Tag and push only after
-reviewing their plans and confirming the configured remote.
+reviewing their plans and confirming the configured remote. SemVer profiles use
+`vMAJOR.MINOR.PATCH` tags, optionally followed by prerelease or build metadata.
 
 ADRs use the Matt-native sequential format in `docs/adr/NNNN-slug.md`. Do not
 create a second ADR directory or put native structured metadata into an ADR.

@@ -1,0 +1,409 @@
+# Merge action plan: agent-first architecture scaffold
+
+Status: Git BBQ lifecycle slices 1–8 are published through `git-bbq-v0.1.7`;
+the staged Go migration remains in progress. The roadmap is now tracked by
+concrete slices and exit gates rather than a repeated coarse checklist.
+
+This document is the durable handoff for merging `adr-repo-governance` and
+`ai-software-architect`. It records what was implemented, why some requested
+capabilities are intentionally not defaults, and the gates that still prevent a
+complete Python removal or unattended publication.
+
+## Slice ledger
+
+The previous seven-item unfinished-work list did not record completed increments,
+so it is retired. The active ledger is:
+
+| Slice | Scope | Status / exit evidence |
+| --- | --- | --- |
+| GBBQ-01 | Go scaffold and githabits policy foundation | Complete: `git-bbq-v0.1.0` |
+| GBBQ-02 | Read-only action planning | Complete: `git-bbq-v0.1.1` |
+| GBBQ-03 | Approval-gated action execution | Complete: `git-bbq-v0.1.2` |
+| GBBQ-04 | Repository init and branch execution | Complete: `git-bbq-v0.1.3` |
+| GBBQ-05 | Approval-gated remote setup | Complete: `git-bbq-v0.1.4` |
+| GBBQ-06 | Persist configured remote state | Complete: `git-bbq-v0.1.5` |
+| GBBQ-07 | End-to-end approved push verification | Complete: `git-bbq-v0.1.6` |
+| GBBQ-08 | SemVer policy and annotated-tag execution | Complete: `git-bbq-v0.1.7` |
+
+The next active slice is `M-09`, release progression: derive the next SemVer
+from existing tags and reject duplicate or non-monotonic releases before any
+tag or push plan is executable.
+
+Nine concrete slices remain after `GBBQ-08`:
+
+1. `M-09` Release progression and duplicate/non-monotonic tag protection.
+2. `M-10` Explicit provider provisioning through an approval-gated `gh repo create` adapter.
+3. `M-11` Remaining Python deterministic domains and Codex hook/control-plane parity.
+4. `M-12` Fixture parity for contracts, protected paths, Windows behavior, and hook protocol.
+5. `M-13` Go-based Codex packaging, release, notices, and clean-machine install tests.
+6. `M-14` Remaining legacy scaffold language profiles and migration command.
+7. `M-15` Exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates.
+8. `M-16` Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified.
+9. `M-17` Python runtime retirement after every preceding gate passes.
+
+## Outcome implemented in this slice
+
+The target repository is `/Users/avery/build/low-level-tools/ai-software-architect`.
+The new public binary name is `ai-architect`, and the new project artifact root is
+`.ai-architect/`.
+
+Implemented:
+
+- A Go 1.26+ module under `cmd/`, `internal/architect/`, and `internal/mcpserver/`.
+- `ai-architect questions --format json` for host-agent setup discovery.
+- `ai-architect setup --answers answers.json` with `yes`, `no`, and
+  `make-default` answers for binary choices.
+- Separate `.adr-scaffold.yaml` and `.githabits.yaml` files. Scaffold toggles do
+  not contain Git mutation policy, and Git defaults do not contain scaffold policy.
+- Language detection and tailored Go, TypeScript, Python, Rust, and generic
+  project skills. Existing files are preserved unless `--force` is explicit.
+- Optional `AGENTS.md`, `CLAUDE.md`, scoped skills, project context, architecture
+  contract, implementation plan, Pages workflow, static docs starter, and memory
+  placeholder generation.
+- `ai-architect decision new/index/list/show/check` using Markdown plus structured
+  YAML frontmatter and a generated JSON index.
+- ADR schema 1.1.0 fields for the five mandatory motivation answers, a comparable
+  decision matrix, and a correct/incorrect action contract with good/bad outcomes.
+- A compatibility extension to the existing Pydantic schema. Legacy 1.0.0
+  records remain valid; 1.1.0 records require the new fields.
+- Bounded static dependency evidence for Go, TypeScript/JavaScript, Python, and
+  Rust source supplied to the core; no import, execution, build, or test of the
+  analyzed project occurs.
+- Secret-like content scanning that returns categories and line numbers, never
+  suspected values.
+- Explicit Git and `gh repo create` planning plus `--approve` execution. Stored
+  preferences are never treated as permission.
+- An official Go MCP STDIO adapter with five read-only tools: contract validation,
+  artifact scanning, complete bundle validation, decision listing, and bounded
+  inline dependency analysis.
+- Atomic four-artifact bundle validation for pre-persistence candidates and the
+  canonical project directory. It requires accepted ADRs, exact contract
+  `decision_ids`, bounded context/handoff narratives, and secret scanning without
+  returning suspected values. The CLI command is `validate-bundle`; the same
+  check is available as a read-only MCP tool.
+- Make targets: `go-build`, `go-test`, `go-vet`, `go-check`, `questions`, and `mcp`.
+- Regression tests for the Go core and MCP inventory, plus Python compatibility
+  tests for the enriched ADR contract.
+- Exact-parity coverage for the canonical nested architecture contract, legacy
+  1.0.0 ADR compatibility, and 1.1.0 ADR requirements, including bounds,
+  uniqueness, optional/null fields, cross-reference validation, and independent
+  secret-finding categories.
+
+The original dirty worktrees were preserved. No commit, tag, push, remote creation,
+release, plugin installation, or Pages deployment was performed.
+
+## Python-to-Go replacement map
+
+The first slice replaces only the deterministic scaffold/domain boundary. The
+remaining Python host adapter is intentionally still present until parity gates
+pass.
+
+| Existing Python responsibility | Go 1.26+ replacement | Status |
+| --- | --- | --- |
+| Pydantic artifact/config models | Typed Go structs, `encoding/json`, strict `yaml.v3` decoding, and explicit validators | Implemented for the new scaffold/ADR/contract core; legacy schema remains for compatibility |
+| PyYAML/frontmatter parsing | `gopkg.in/yaml.v3` plus bounded frontmatter extraction, alias rejection, duplicate-key rejection, and known-field decoding | Implemented |
+| Python MCP package | Official `github.com/modelcontextprotocol/go-sdk` over STDIO | Implemented for five read-only tools, including atomic bundle validation |
+| `pathlib`, `os`, and repository walking | Standard-library `os`, `path/filepath`, and `io/fs` with symlink and size limits | Implemented for static evidence and scaffold writes |
+| subprocess/PowerShell Git orchestration | `os/exec` with `exec.CommandContext`, argument arrays, timeouts, and explicit approval | Implemented as a plan/approval boundary; release packaging is not migrated |
+| pytest/race-adjacent checks | `testing`, `go test`, `go test -race`, and `go vet` | Implemented for the new Go packages |
+| `uv`/PyInstaller/Codex packaging | `go.mod`, Makefile targets, and a CI Go job | Build wiring is staged; Codex bundle and clean-machine install migration remains |
+
+No third-party Go dependency was added for vector search. SQLite FTS5 and
+sqlite-vec remain evaluation candidates after the retrieval gate.
+
+## Deliberate architectural decisions
+
+### One product, one agent-facing binary
+
+Use `ai-architect`, not `adr`, to avoid ambiguity with the former standalone ADR
+project and to make the tool’s scope clear to an agent. The `decision` subcommands
+are diagnostics and recording primitives behind an agent-led question and approval
+workflow. The CLI does not replace the host’s user-approval surface.
+
+### ADR format: structured Nygard/MADR hybrid
+
+The implementation keeps Markdown because it is diffable and portable, YAML
+frontmatter because it is directly parseable, and JSON because a generated index is
+cheap for agents to retrieve. The selected ADR body is intentionally more
+structured than a minimal Nygard record:
+
+1. mandatory motivation in frontmatter;
+2. context and decision drivers;
+3. a stable-option decision matrix with ordinal fit, benefits, drawbacks, risks,
+   evidence, and outcome;
+4. the decision and explicit accepted/rejected rationale;
+5. good and bad consequences;
+6. an agent action contract with correct and incorrect examples; and
+7. observable confirmation criteria.
+
+This combines Nygard’s concise decision history with MADR’s metadata and option
+structure. Y-Statements remain useful for very small decisions, but are too terse
+as the sole record for the requested agent action and consequence guidance. The
+ADR template catalogue compares these families in
+[ADR Templates](https://adr.github.io/adr-templates/); a recent controlled study
+found Nygard and MADR strongest in its expert screen and Nygard strongest in its
+controlled task, which supports using the concise core with explicit structured
+extensions rather than copying a large human-oriented template.
+
+### Mandatory motivation and auto-reason warning
+
+Every new project and every new 1.1.0 ADR asks:
+
+- Why are you building this?
+- What problem does it solve?
+- Who is it for?
+- Do suitable alternatives already exist?
+- Why will this solution solve problems they cannot?
+
+If `auto_reason` is `yes`, missing answers receive provisional agent-generated
+placeholders and a visible warning. An accepted ADR cannot retain those
+placeholders. This preserves momentum without laundering an unarticulated project
+motivation into certainty.
+
+### Keep AGENTS and ADRs separate
+
+`AGENTS.md` and scoped skills are operating procedure: how an agent should work in
+the repository. ADRs are historical decision evidence: why a material choice was
+made, what was rejected, and what consequences are accepted. They are linked in
+the read order but never merged. This avoids making every future agent consume all
+decision history as instructions and prevents historical trade-offs from becoming
+accidental standing policy.
+
+### File-format decision
+
+Use the following narrow division of labor:
+
+| Data | Format | Reason |
+| --- | --- | --- |
+| Agent operating rules | Markdown | Native to Agent Skills and easy to review. |
+| ADR narrative and action examples | Markdown | Keeps rationale and examples diffable. |
+| ADR/contract structured authority | YAML frontmatter/YAML | Human-editable and schema-validatable. |
+| Generated decision retrieval index | JSON | Stable, low-friction machine consumption. |
+| Behavioral acceptance | Existing Gherkin/fixtures | Already part of the repository contract. |
+
+TOON is not the default. The current TOON specification is a working draft and
+the available benchmark evidence reports token savings with accuracy and
+multi-turn parsing trade-offs. A format benchmark also found model/format
+interaction matters more than a universal winner. If a future retrieval fixture
+shows a material win, TOON can be used as an ephemeral transport, never as the
+authoritative source.
+
+## Configuration contract
+
+`.adr-scaffold.yaml` owns generated content:
+
+```yaml
+version: 1
+language: go
+features:
+  agents: true
+  skills: true
+  claude: false
+  adr: true
+  context: true
+  contract: true
+  implementation_plan: true
+  pages: false
+  memory: false
+paths:
+  architect: .ai-architect
+  decisions: .ai-architect/decisions
+  docs_site: docs-site
+```
+
+`.githabits.yaml` owns lifecycle preferences and remote metadata:
+
+```yaml
+version: 1
+branch: main
+versioning: semver
+initial_tag: v0.1.0
+commit_style: conventional-commits
+init: false
+commit: false
+tag: false
+push: false
+create_remote: false
+remote:
+  visibility: private
+```
+
+`make-default` is persisted in the appropriate file and reused by later setup
+runs. It is not an authorization token. Git, `gh`, tag, push, and deployment
+actions still require a visible plan and explicit approval.
+
+## Agent setup questions and implied defaults
+
+Ask the first six for every project. Ask the remaining questions once per project
+unless the user changes the scaffold or Git policy:
+
+| Question | Response | Default |
+| --- | --- | --- |
+| Primary language | text or `auto` | `auto` detection |
+| Why building? | required text | none |
+| Problem solved? | required text | none |
+| Intended audience? | required text | none |
+| Existing alternatives? | required text | none |
+| Why this solution? | required text | none |
+| Permit provisional auto-reason? | yes/no/make-default | no |
+| Generate `AGENTS.md`? | yes/no/make-default | yes |
+| Generate scoped skills? | yes/no/make-default | yes |
+| Enable ADR workflow? | yes/no/make-default | yes |
+| Generate project context? | yes/no/make-default | yes |
+| Generate contract starter? | yes/no/make-default | yes |
+| Generate implementation plan? | yes/no/make-default | yes |
+| Generate `CLAUDE.md` pointer? | yes/no/make-default | no |
+| Generate Pages workflow/docs? | yes/no/make-default | no |
+| Create memory placeholder? | yes/no/make-default | no |
+| Initialize Git if absent? | yes/no/make-default | no |
+| Create initial commit? | yes/no/make-default | no |
+| Create initial tag? | yes/no/make-default | no |
+| Push to origin? | yes/no/make-default | no |
+| Create GitHub origin with `gh`? | yes/no/make-default | no |
+
+The host agent should ask these questions, build an answer object, and invoke the
+CLI. The CLI remains deterministic and does not attempt to infer motivation from
+the repository. If the user cannot articulate motivation and declines auto-reason,
+stop setup with a clear explanation; this is a project-risk finding, not a missing
+technical detail to paper over.
+
+## MCP and codebase-memory decision
+
+The new Go MCP adapter is deliberately read-only. Its inputs are bounded inline
+source or a fixed `.ai-architect/decisions` read relative to the process directory;
+it does not accept arbitrary absolute roots, execute code, use a network, or write
+files. The host-native approval path and `ai-architect` CLI own writes.
+
+Do not make a third-party `codebase-mcp` a required component yet. The name refers
+to multiple projects with different storage and capability models, including
+implementations that expose broad indexing or write-like operations. Making one a
+default would add an unreviewed prompt-injection and permission boundary and would
+duplicate the host’s repository tools. If a codebase graph later proves necessary,
+add it behind a bounded relative-root contract, allowlisted operations, preview,
+idempotency key, explicit approval, secret/path checks, and a clean-machine
+uninstall test.
+
+The sequential-thinking MCP server is a useful optional reasoning adjunct, not a
+required project dependency. It can record revisions and branches, but it does not
+discover or choose tools. Tool selection, safety, and durable decisions remain in
+the host workflow and Go contracts.
+
+## Memory and embeddings gatecheck
+
+Do not store canonical docs only in sqlite-vec. Keep raw Markdown/YAML/JSON as the
+portable, reviewable source and derive indexes from it. Start with generated JSON
+plus SQLite FTS5 if keyword retrieval is insufficient. Add sqlite-vec only if a
+representative evaluation shows a material retrieval improvement that justifies
+the dependency, rebuild behavior, backup story, and cross-platform packaging cost.
+
+The gate must measure at least recall@k or MRR/nDCG on real project questions,
+answer-support coverage, p50/p95 latency, token/context reduction, index rebuild
+correctness, stale-document behavior, and failure recovery. A small project with
+dozens of ADRs is normally not enough evidence for a vector database.
+
+OpenAI’s official embeddings documentation lists `text-embedding-3-large` with a
+default 3072-dimensional output and a `dimensions` shortening parameter. That
+describes API capability, not inclusion in a ChatGPT/Codex subscription. OpenAI
+documents ChatGPT and API billing as separate; use a separately authorized API key
+and billing account, or a local embedding provider, and provide a raw-document
+fallback when unavailable. Never make project setup depend on an unverified API
+entitlement. See the [embeddings guide](https://developers.openai.com/api/docs/guides/embeddings),
+the [3-large model page](https://developers.openai.com/api/docs/models/text-embedding-3-large),
+and [API billing guidance](https://help.openai.com/en/articles/9039756-managing-your-work-in-the-api-platform-with-projects).
+
+## Automation and Pages
+
+The generated Pages workflow uses GitHub’s Actions artifact flow with
+`configure-pages`, `upload-pages-artifact`, and `deploy-pages`; it does not create
+or mutate a `gh-pages` branch. The workflow has explicit `contents: read`,
+`pages: write`, and `id-token: write` permissions. Generation is opt-in and actual
+publication remains subject to repository CI and user-approved push policy. See
+[GitHub’s custom Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+Remote creation uses the documented `gh repo create --source . --remote origin`
+shape only after `ai-architect git bootstrap --approve`. The implementation plans
+commands first and uses argument arrays rather than a shell. See the
+[GitHub CLI repository-create manual](https://cli.github.com/manual/gh_repo_create).
+
+## Good and bad action sequences
+
+Good sequence:
+
+1. The agent asks the setup questions and records the user’s answers.
+2. It runs `ai-architect setup --answers answers.json --format json`.
+3. It reads project context, contract, the decision index, and only relevant ADRs.
+4. It proposes a decision with a matrix and waits for approval.
+5. It runs `ai-architect decision check`, then shows the exact Git/Pages action plan.
+6. It performs an external action only after explicit approval and reports evidence.
+
+Result: the next agent can retrieve motivation, constraints, decision history, and
+the permitted workflow without guessing; external changes are reviewable and
+bounded.
+
+Bad sequence:
+
+1. The agent invents a project motivation from filenames.
+2. It merges the motivation into `AGENTS.md` and treats it as permanent policy.
+3. It writes an accepted ADR with one option and no trade-off.
+4. It enables a broad write-capable MCP or auto-creates a remote from a stored
+   `push: true` preference.
+5. It publishes a mutable `gh-pages` branch before validating generated docs.
+
+Result: historical assumptions become instructions, alternatives disappear,
+permissions are confused with preferences, and an agent or malicious repository
+content can cause an irreversible external action.
+
+The correct/incorrect action examples in each ADR serve the same purpose locally:
+they make the expected action and failure outcome explicit. They are examples,
+not hidden policies; the actual policy remains in the scoped skill or `AGENTS.md`.
+
+## Validation evidence from this implementation
+
+Passed:
+
+```text
+go test ./...
+go test -race ./...
+go build ./...
+go vet ./...
+uv run ruff check .
+uv run pytest shared/schemas/tests/test_models.py tools/python-mcp/tests/test_contracts.py tools/python-mcp/tests/test_repository_tools.py
+```
+
+The real CLI was smoke-tested in an isolated temporary project: setup generated
+the selected files, `decision new` created `ADR-001`, `decision check` passed, and
+the JSON index was generated. The Go template, symlink refusal, Git-ref
+validation, and atomic bundle rules also have regression coverage. The MCP
+server was tested over in-memory transports for tool inventory, contract
+validation, and the invalid-bundle diagnostic path. Bundle tests cover accepted
+decisions, exact contract references, bounded narratives, and secret-value
+redaction. A fresh CLI smoke first rejected an accepted ADR whose ID was absent
+from the contract, then passed after the exact `decision_ids` link was added.
+
+Known baseline caveat: the AI repository had unrelated dirty packaging/control-
+plane edits before this work. The current full Python suite reports 169 passing,
+2 failing, and 1 skipped. The failures are
+`tests/packaging/test_codex_control_plane.py::test_turn_state_is_minimal_and_stale_files_are_bounded`
+and
+`tests/packaging/test_openai_plugin_submission.py::test_openai_package_has_windows_explorer_compatible_member_paths`;
+both exercise pre-existing dirty control-plane/runtime-packaging changes rather
+than the new Go core. The full suite must be rerun from a clean worktree before
+using it as migration evidence.
+
+## References and implementation files
+
+- Go entrypoint: `cmd/ai-architect/main.go`
+- Go MCP entrypoint: `cmd/ai-architect-mcp/main.go`
+- Go core: `internal/architect/`
+- MCP adapter: `internal/mcpserver/`
+- Compatibility schema: `shared/schemas/src/ai_architect_schemas/models.py`
+- Canonical ADR skill/template: `shared/skills/create-architecture-decisions/`
+- Migration notes: `docs/GO_MIGRATION.md`
+- Build shortcuts: `Makefile`
+
+## Migration workstream context
+
+The slice ledger above decomposes the former seven coarse workstreams into
+concrete, reviewable increments. Do not restore the retired checklist; update
+the ledger whenever a slice reaches its exit gate, and change the remaining
+count when the next slice is selected.

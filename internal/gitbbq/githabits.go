@@ -8,6 +8,7 @@ import (
 )
 
 var conventionalCommitPattern = regexp.MustCompile(`^(feat|fix|docs|refactor|test|chore|build|ci|perf|revert)(\([^)]*\))?!?: .+`)
+var semanticVersionTagPattern = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$`)
 
 // GitPlanRequest contains the values needed to render one Git action preview.
 // It deliberately carries data, not permission; approval remains a host concern.
@@ -87,6 +88,9 @@ func PlanGitAction(config GitHabits, action GitAction, request GitPlanRequest) (
 		if !safeGitRef(tag) {
 			return GitPlan{}, fmt.Errorf("tag is not a safe Git ref: %q", tag)
 		}
+		if config.Versioning == "semver" && !safeSemanticVersionTag(tag) {
+			return GitPlan{}, fmt.Errorf("tag does not follow the configured semver convention: %q", tag)
+		}
 		plan.Command = []string{"git", "tag", "-a", tag, "-m", tag}
 	case GitActionPush:
 		if !plan.Allowed {
@@ -144,4 +148,8 @@ func safeGitRemoteURL(value string) bool {
 	}
 	parsed, err := url.Parse(value)
 	return err != nil || parsed.User == nil
+}
+
+func safeSemanticVersionTag(value string) bool {
+	return semanticVersionTagPattern.MatchString(strings.TrimSpace(value))
 }

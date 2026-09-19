@@ -79,6 +79,17 @@ func TestPlanGitActionBuildsAnnotatedTagCommand(t *testing.T) {
 	}
 }
 
+func TestPlanGitActionRejectsNonSemverTag(t *testing.T) {
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := PlanGitAction(config, GitActionTag, GitPlanRequest{Tag: "release"}); err == nil {
+		t.Fatal("non-SemVer tag was accepted")
+	}
+}
+
 func TestPlanGitActionBuildsPushCommandForConfiguredRemote(t *testing.T) {
 	config, err := GitHabitsForProfile("autonomous")
 	if err != nil {

@@ -285,3 +285,65 @@ func TestExecuteGitPlanPushesCommitToConfiguredRemote(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestExecuteGitPlanCreatesAnnotatedSemverTag(t *testing.T) {
+	workspace := t.TempDir()
+	config, err := GitHabitsForProfile("autonomous")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := OSGitRunner{Timeout: time.Second}
+
+	initPlan, err := PlanGitAction(config, GitActionInit, GitPlanRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, initPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	branchPlan, err := PlanGitAction(config, GitActionBranch, GitPlanRequest{Branch: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, branchPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runner.Run(workspace, []string{"git", "config", "user.email", "git-bbq@example.invalid"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runner.Run(workspace, []string{"git", "config", "user.name", "Git BBQ Test"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspace, "README.md"), []byte("tag tracer\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stagePlan, err := PlanGitAction(config, GitActionStage, GitPlanRequest{Paths: []string{"README.md"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, stagePlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	commitPlan, err := PlanGitAction(config, GitActionCommit, GitPlanRequest{Message: "feat: add tag tracer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, commitPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+	tagPlan, err := PlanGitAction(config, GitActionTag, GitPlanRequest{Tag: "v0.1.0"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteGitPlan(config, workspace, tagPlan, true, runner); err != nil {
+		t.Fatal(err)
+	}
+
+	tagType, err := exec.Command("git", "-C", workspace, "cat-file", "-t", "v0.1.0").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(tagType); got != "tag\n" {
+		t.Fatalf("tag object type = %q", got)
+	}
+}

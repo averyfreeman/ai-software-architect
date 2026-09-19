@@ -79,7 +79,8 @@ approved command succeeds, the CLI persists `remote.status: configured`; a
 failed command leaves the status pending. Push planning emits a command only
 after the project remote is explicitly marked `configured`; staging rejects
 absolute and parent-traversal paths, and conventional-commit profiles reject
-messages without a recognized commit type.
+messages without a recognized commit type. SemVer profiles require tags in the
+`vMAJOR.MINOR.PATCH` form, with optional prerelease and build metadata.
 
 ## Codex integration
 
