@@ -14,6 +14,15 @@ import pytest
 from ai_architect_schemas import ArchitectureContract
 
 from adapters.codex import runtime_entry
+from adapters.codex.activation_policy import (
+    CANONICAL_REFERENCE_BASE,
+    CodexTurnContext,
+    CodexTurnRoute,
+    classify_prompt,
+    developer_context,
+    repository_snapshot_command,
+    with_reference_hints,
+)
 from adapters.codex.artifact_guard import (
     ArtifactCandidate,
     proposed_artifact_candidates,
@@ -23,17 +32,6 @@ from adapters.codex.continuation import (
     CheckpointPhase,
     WorkflowCheckpoint,
     WorkflowCheckpointManager,
-)
-from adapters.codex.control_plane import (
-    CANONICAL_REFERENCE_BASE,
-    REQUIRED_COMPARISON_SECTIONS,
-    CodexTurnContext,
-    CodexTurnRoute,
-    classify_prompt,
-    developer_context,
-    parse_option_comparison_markdown,
-    repository_snapshot_command,
-    with_reference_hints,
 )
 from adapters.codex.hook_entry import (
     MAX_CONTINUATION_AGE_SECONDS,
@@ -52,6 +50,10 @@ from adapters.codex.repository_snapshot import (
     serialize_repository_snapshot,
 )
 from adapters.codex.response_locales import comparison_locale
+from adapters.codex.response_policy import (
+    REQUIRED_COMPARISON_SECTIONS,
+    parse_option_comparison_markdown,
+)
 
 
 def _payload(event: str) -> dict[str, object]:
@@ -1233,7 +1235,7 @@ def test_turn_state_is_minimal_and_stale_files_are_bounded(tmp_path: Path) -> No
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = "$ai-software-architect Review this project."
     handle_user_prompt_submit(submit, tmp_path)
-    state = next((tmp_path / "control-plane").glob("*.json"))
+    state = next((tmp_path / "control-plane").glob("turn-*.json"))
     state_text = state.read_text("utf-8")
     assert "Review this project" not in state_text
     assert "prompt" not in state_text

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -15,11 +17,11 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 try:
-    from adapters.codex.control_plane import CodexTurnContext, CodexTurnRoute
+    from adapters.codex.activation_policy import CodexTurnContext, CodexTurnRoute
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
-    from control_plane import (  # type: ignore[import-not-found, no-redef]
+    from activation_policy import (  # type: ignore[import-not-found, no-redef]
         CodexTurnContext,
         CodexTurnRoute,
     )
@@ -68,9 +70,16 @@ class SessionContinuation:
 
 
 class ContinuationManager:
-    def __init__(self, plugin_data: Path, *, max_age_seconds: int) -> None:
+    def __init__(
+        self,
+        plugin_data: Path,
+        *,
+        max_age_seconds: int,
+        clock: Callable[[], float] = time.time,
+    ) -> None:
         self._root = plugin_data / "control-plane"
         self._max_age_seconds = max_age_seconds
+        self._clock = clock
 
     def _path(self, session_id: str) -> Path:
         digest = hashlib.sha256(session_id.encode("utf-8", errors="replace")).hexdigest()
@@ -86,12 +95,14 @@ class ContinuationManager:
             newline="\n",
         )
         temporary.replace(path)
+        now = self._clock()
+        os.utime(path, (now, now))
 
     def consume(self, session_id: str) -> SessionContinuation | None:
         path = self._path(session_id)
         try:
             raw = json.loads(path.read_text("utf-8"))
-            if time.time() - path.stat().st_mtime > self._max_age_seconds:
+            if self._clock() - path.stat().st_mtime > self._max_age_seconds:
                 return None
             context_raw = raw["context"]
             return SessionContinuation(
@@ -114,8 +125,14 @@ class ContinuationManager:
 
 
 class WorkflowCheckpointManager:
-    def __init__(self, plugin_data: Path) -> None:
+    def __init__(
+        self,
+        plugin_data: Path,
+        *,
+        clock: Callable[[], float] = time.time,
+    ) -> None:
         self._root = plugin_data / "control-plane"
+        self._clock = clock
 
     def _path(self, session_id: str) -> Path:
         digest = hashlib.sha256(session_id.encode("utf-8", errors="replace")).hexdigest()
@@ -131,6 +148,8 @@ class WorkflowCheckpointManager:
             newline="\n",
         )
         temporary.replace(path)
+        now = self._clock()
+        os.utime(path, (now, now))
 
     def load(self, session_id: str) -> WorkflowCheckpoint | None:
         path = self._path(session_id)

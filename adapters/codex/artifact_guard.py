@@ -25,12 +25,16 @@ from pydantic import ValidationError
 
 try:
     from adapters.codex.artifact_paths import ArtifactKind, canonical_artifact_path
+    from adapters.codex.artifact_validation import patch_text_from_tool_input
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
     from artifact_paths import (  # type: ignore[import-not-found, no-redef]
         ArtifactKind,
         canonical_artifact_path,
+    )
+    from artifact_validation import (  # type: ignore[import-not-found, no-redef]
+        patch_text_from_tool_input,
     )
 
 FILE_SECTION_PATTERN = re.compile(
@@ -192,16 +196,7 @@ def proposed_artifact_candidates(
     tool_input: object,
     workspace: Path,
 ) -> tuple[ArtifactCandidate, ...]:
-    try:
-        from adapters.codex.control_plane import _patch_text_from_tool_input
-    except ModuleNotFoundError as exc:
-        if exc.name != "adapters":
-            raise
-        from control_plane import (  # type: ignore[import-not-found, no-redef]
-            _patch_text_from_tool_input,
-        )
-
-    patch = _patch_text_from_tool_input(tool_input)
+    patch = patch_text_from_tool_input(tool_input)
     if patch is not None:
         return _patch_candidates(patch, workspace)
     return _structured_write_candidate(tool_input, workspace)
