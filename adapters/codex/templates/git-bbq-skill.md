@@ -26,7 +26,9 @@ git-bbq githabits plan --action push --branch main --json
 
 The planner is read-only. Use its argument-separated command only after the
 Codex host has granted explicit approval; a pending remote intentionally blocks
-push planning.
+push planning. To perform one approved action, pass the same inputs to
+`git-bbq githabits execute --approve`; the executor invokes Git without a shell,
+rejects force flags, and applies a bounded timeout.
 
 ADRs use the Matt-native sequential format in `docs/adr/NNNN-slug.md`. Do not
 create a second ADR directory or put native structured metadata into an ADR.
