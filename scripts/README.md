@@ -72,6 +72,27 @@ Do not use `-ReuseRuntime` after runtime Python, shared domain code, schemas, de
 `uv.lock`, Python, or PyInstaller configuration changes. When uncertain, use the
 full build.
 
+For the repository-contained M-17 Go candidate, use the opt-in path:
+
+```powershell
+.\scripts\build-codex-plugin.ps1 -PluginVersion 0.2.3 -GoRuntime
+```
+
+The candidate builder records the runtime implementation, source, packaged
+executable path, and SHA-256 in generated provenance. It still runs the
+validator and the short-lived hook smoke test. The default build remains the
+Python compatibility runtime; this candidate path does not authorize cutover.
+After validating an exact candidate, prepare its sanitized repository evidence:
+
+```powershell
+uv run python scripts/prepare_m17_candidate_evidence.py `
+  --plugin dist/codex/ai-software-architect `
+  --target windows-x86_64
+```
+
+The evidence file is generated under `.tmp/` and records remaining manual
+exploratory, Codex Desktop, clean-machine, behavioral, and release gates.
+
 ## Copy to the Personal Marketplace
 
 Preview the exact destination and operation:

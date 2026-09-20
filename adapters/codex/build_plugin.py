@@ -414,6 +414,42 @@ def _build_runtime(target: RuntimeTarget) -> Path:
     return runtime
 
 
+def _build_go_runtime(target: RuntimeTarget, go: str = "go") -> Path:
+    runtime_root = BUILD / "go-runtime" / target.name
+    runtime = runtime_root / RUNTIME_DIRECTORY_NAME
+    if runtime_root.exists():
+        shutil.rmtree(runtime_root)
+    runtime.mkdir(parents=True)
+    if target.name == "windows-x86_64":
+        goos, goarch = "windows", "amd64"
+    elif target.name == "aarch64-darwin":
+        goos, goarch = "darwin", "arm64"
+    else:
+        raise ValueError(f"Go Codex runtime does not support target {target.name!r}")
+    environment = os.environ.copy()
+    environment.update({"CGO_ENABLED": "0", "GOOS": goos, "GOARCH": goarch})
+    executable = runtime / target.executable_name
+    subprocess.run(  # noqa: S603
+        [
+            go,
+            "build",
+            "-buildvcs=false",
+            "-trimpath",
+            "-ldflags",
+            "-s -w",
+            "-o",
+            str(executable),
+            "./cmd/ai-architect-runtime",
+        ],
+        cwd=ROOT,
+        env=environment,
+        check=True,
+    )
+    if target.name != "windows-x86_64":
+        executable.chmod(0o755)
+    return runtime
+
+
 def _write_hooks(destination: Path, target: RuntimeTarget) -> None:
     hooks = json.loads((TEMPLATES / "hooks.json").read_text(encoding="utf-8"))
     for event, groups in hooks["hooks"].items():
@@ -436,7 +472,11 @@ def assemble(
     *,
     plugin_version: str | None = None,
     target: RuntimeTarget | None = None,
+    runtime_implementation: str = "python",
+    runtime_source: str | None = None,
 ) -> Path:
+    if runtime_implementation not in {"python", "go"}:
+        raise ValueError("runtime_implementation must be python or go")
     target = target or target_for_name("windows-x86_64")
     output_resolved = OUTPUT.resolve()
     expected_parent = OUTPUT_PARENT.resolve()
@@ -510,10 +550,27 @@ def assemble(
     shutil.copytree(runtime, runtime_target)
 
     generated_files = sorted(path for path in OUTPUT.rglob("*") if path.is_file())
+    runtime_executable = runtime_target / target.executable_name
+    if not runtime_executable.is_file():
+        raise FileNotFoundError(
+            f"runtime implementation did not create {runtime_executable}"
+        )
+    if runtime_source is None:
+        runtime_source = (
+            "cmd/ai-architect-runtime"
+            if runtime_implementation == "go"
+            else "adapters/codex/runtime_entry.py"
+        )
     provenance = {
         "schema_version": "1.0.0",
         "generator": "adapters/codex/build_plugin.py",
         "plugin_version": manifest_payload["version"],
+        "runtime": {
+            "implementation": runtime_implementation,
+            "source": runtime_source,
+            "executable": runtime_executable.relative_to(OUTPUT).as_posix(),
+            "sha256": _hash(runtime_executable),
+        },
         "source_to_output": dict(sorted(source_to_output.items())),
         "additional_source_to_output": dict(sorted(additional_source_to_output.items())),
         "output_sha256": {
@@ -530,6 +587,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", type=Path)
     parser.add_argument("--build-runtime", action="store_true")
+    parser.add_argument("--build-go-runtime", action="store_true")
+    parser.add_argument("--go", default="go")
+    parser.add_argument(
+        "--runtime-implementation",
+        choices=("python", "go"),
+        default="python",
+    )
     parser.add_argument("--plugin-version")
     parser.add_argument(
         "--target",
@@ -537,18 +601,34 @@ def main() -> None:
         default="windows-x86_64",
     )
     args = parser.parse_args()
-    selected_modes = sum((args.runtime is not None, args.build_runtime))
+    selected_modes = sum(
+        (args.runtime is not None, args.build_runtime, args.build_go_runtime)
+    )
     if selected_modes != 1:
-        parser.error("use exactly one of --runtime or --build-runtime")
+        parser.error(
+            "use exactly one of --runtime, --build-runtime, or --build-go-runtime"
+        )
     target = target_for_name(args.target)
-    runtime = _build_runtime(target) if args.build_runtime else args.runtime
+    if args.build_go_runtime:
+        runtime = _build_go_runtime(target, args.go)
+        runtime_implementation = "go"
+    elif args.build_runtime:
+        runtime = _build_runtime(target)
+        runtime_implementation = "python"
+    else:
+        runtime = args.runtime
+        runtime_implementation = args.runtime_implementation
     if runtime is None or not runtime.resolve().is_dir():
-        parser.error("provide --runtime <reviewed one-directory runtime> or --build-runtime")
+        parser.error(
+            "provide --runtime <reviewed one-directory runtime>, --build-runtime, "
+            "or --build-go-runtime"
+        )
     print(
         assemble(
             runtime.resolve(),
             plugin_version=args.plugin_version,
             target=target,
+            runtime_implementation=runtime_implementation,
         )
     )
 

@@ -16,12 +16,19 @@ and clean-machine acceptance remain separate documented release gates.
 
 .PARAMETER PluginVersion
 Public Semantic Versioning value, without the Git tag's leading v.
+
+.PARAMETER RuntimeImplementation
+Candidate runtime implementation to assemble and validate. Python remains the
+default compatibility path; Go is an opt-in M-17 readiness candidate.
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [string]$PluginVersion
+    [string]$PluginVersion,
+
+    [ValidateSet("python", "go")]
+    [string]$RuntimeImplementation = "python"
 )
 
 Set-StrictMode -Version Latest
@@ -114,7 +121,12 @@ try {
     Invoke-Checked $Uv @("run", "pytest", "-q")
 
     Write-Host "Building and validating the exact release candidate..."
-    & $BuildScript -PluginVersion $PluginVersion -SkipSync
+    if ($RuntimeImplementation -eq "go") {
+        & $BuildScript -PluginVersion $PluginVersion -GoRuntime -SkipSync
+    }
+    else {
+        & $BuildScript -PluginVersion $PluginVersion -SkipSync
+    }
 
     Write-Host "Creating the dependency-free marketplace bundle..."
     & $ReleasePackageScript -PluginVersion $PluginVersion

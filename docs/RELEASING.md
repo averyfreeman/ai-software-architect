@@ -222,6 +222,12 @@ invalidate its provenance hashes.
 Pure repository-documentation changes such as `README.md` or files under `docs/`
 do not require a plugin rebuild because those files are not packaged.
 
+The repository-contained M-17 candidate uses
+`run-release-candidate-gates.ps1 -RuntimeImplementation go`. This is an opt-in
+Go host-runtime package and provenance path; the default Python compatibility
+runtime remains unchanged, and the command does not satisfy the manual
+Codex Desktop, clean-machine, exploratory, behavioral, or publication gates.
+
 ## Validate the Assembled Package
 
 `build-codex-plugin.ps1` always runs package/provenance validation and a runtime

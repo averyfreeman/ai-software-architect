@@ -38,7 +38,12 @@ SEMVER = re.compile(
 )
 
 
-def validate(root: Path, *, target: RuntimeTarget | None = None) -> None:
+def validate(
+    root: Path,
+    *,
+    target: RuntimeTarget | None = None,
+    runtime_implementation: str | None = None,
+) -> None:
     root = root.resolve(strict=True)
     target = target or detect_packaged_target(root)
     manifest_path = root / ".codex-plugin" / "plugin.json"
@@ -186,6 +191,23 @@ def validate(root: Path, *, target: RuntimeTarget | None = None) -> None:
     provenance = json.loads(provenance_path.read_text("utf-8"))
     if provenance.get("plugin_version") != manifest["version"]:
         raise ValueError("provenance plugin version does not match the manifest")
+    runtime = provenance.get("runtime")
+    if not isinstance(runtime, dict):
+        raise ValueError("provenance runtime identity is missing")
+    if runtime.get("implementation") not in {"python", "go"}:
+        raise ValueError("provenance runtime implementation is invalid")
+    if (
+        runtime_implementation is not None
+        and runtime.get("implementation") != runtime_implementation
+    ):
+        raise ValueError(
+            "provenance runtime implementation does not match the requested candidate"
+        )
+    runtime_path = root / target.executable_relative_path
+    if runtime.get("executable") != target.executable_relative_path.as_posix():
+        raise ValueError("provenance runtime executable does not match the target")
+    if runtime.get("sha256") != hashlib.sha256(runtime_path.read_bytes()).hexdigest():
+        raise ValueError("provenance runtime hash does not match the packaged executable")
     expected_hashes = provenance.get("output_sha256")
     if not isinstance(expected_hashes, dict):
         raise ValueError("provenance output hashes are missing")
@@ -206,10 +228,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("plugin", type=Path)
     parser.add_argument("--target", choices=sorted(RUNTIME_TARGETS))
+    parser.add_argument("--runtime-implementation", choices=("python", "go"))
     args = parser.parse_args()
     validate(
         args.plugin,
         target=target_for_name(args.target) if args.target else None,
+        runtime_implementation=args.runtime_implementation,
     )
     print(f"Plugin validation passed: {args.plugin.resolve()}")
 

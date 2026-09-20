@@ -95,9 +95,13 @@ slice.
 
 The Python schemas, Codex hooks, packaging runtime, and legacy Python MCP package
 remain in place for compatibility. Git BBQ now covers the deterministic migration,
-projection artifact, ownership, uninstall, and five-event lifecycle parity gate;
-the remaining gates are the separate exploratory evaluation evidence, a Go Codex
-runtime, clean-machine packaging, and behavioral evaluation before Python removal.
-Bundle validation does not yet replace the Codex pre-write hook. See
+projection artifact, ownership, uninstall, and five-event lifecycle parity gate.
+T004 adds the repository-contained Go Codex host runtime under
+`cmd/ai-architect-runtime/` and `internal/codexruntime/`, plus an opt-in
+candidate packaging, provenance, smoke-test, and evidence path. The remaining
+gates are the separate exploratory evaluation evidence, exact-candidate
+clean-machine packaging, Codex Desktop lifecycle, behavioral evaluation, and
+release evidence before Python removal. Bundle validation does not yet replace
+the Codex pre-write hook. See
 [`M17_RUNTIME_RETIREMENT_READINESS.md`](M17_RUNTIME_RETIREMENT_READINESS.md) for
 the current no-cutover assessment and the exact candidate-specific handoff.

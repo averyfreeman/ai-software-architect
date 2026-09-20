@@ -18,6 +18,10 @@ Semantic Versioning value written into the plugin manifest and provenance.
 .PARAMETER ReuseRuntime
 Reuses build/runtime/ai-architect-runtime instead of rebuilding the runtime.
 
+.PARAMETER GoRuntime
+Builds the short-lived Codex runtime from the repository's Go host adapter.
+This is an opt-in candidate mode; Python compatibility paths remain available.
+
 .PARAMETER SkipSync
 Skips uv sync. Intended for the release-gate wrapper after it has already synced.
 #>
@@ -26,6 +30,7 @@ Skips uv sync. Intended for the release-gate wrapper after it has already synced
 param(
     [string]$PluginVersion,
     [switch]$ReuseRuntime,
+    [switch]$GoRuntime,
     [switch]$SkipSync
 )
 
@@ -76,6 +81,10 @@ if ([string]::IsNullOrWhiteSpace($PluginVersion)) {
 if ($PluginVersion -notmatch $SemVerPattern) {
     throw "PluginVersion is not valid Semantic Versioning: $PluginVersion"
 }
+if ($ReuseRuntime -and $GoRuntime) {
+    throw "ReuseRuntime and GoRuntime are mutually exclusive."
+}
+$RuntimeKind = if ($GoRuntime) { "go" } else { "python" }
 
 Push-Location $RepositoryRoot
 try {
@@ -89,7 +98,11 @@ try {
         "python",
         $BuildProgram
     )
-    if ($ReuseRuntime) {
+    if ($GoRuntime) {
+        Write-Host "Building a new self-contained Go Codex runtime..."
+        $BuildArguments += "--build-go-runtime"
+    }
+    elseif ($ReuseRuntime) {
         if (-not (Test-Path -LiteralPath $RuntimeDirectory -PathType Container)) {
             throw "Reviewed runtime not found: $RuntimeDirectory"
         }
@@ -97,7 +110,7 @@ try {
         $BuildArguments += @("--runtime", $RuntimeDirectory)
     }
     else {
-        Write-Host "Building a new self-contained Windows x86-64 runtime..."
+        Write-Host "Building a new self-contained Windows x86-64 Python compatibility runtime..."
         $BuildArguments += "--build-runtime"
     }
     $BuildArguments += @("--plugin-version", $PluginVersion)
@@ -109,7 +122,9 @@ try {
         "run",
         "python",
         $ValidatorProgram,
-        $PackageDirectory
+        $PackageDirectory,
+        "--runtime-implementation",
+        $RuntimeKind
     )
 
     Write-Host "Smoke-testing the packaged short-lived hook runtime..."

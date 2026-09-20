@@ -8,6 +8,7 @@ go-build:
 	$(GO) build -o "$(BIN_DIR)/git-bbq" ./cmd/git-bbq
 	$(GO) build -o "$(BIN_DIR)/ai-architect" ./cmd/ai-architect
 	$(GO) build -o "$(BIN_DIR)/ai-architect-mcp" ./cmd/ai-architect-mcp
+	$(GO) build -o "$(BIN_DIR)/ai-architect-runtime" ./cmd/ai-architect-runtime
 
 go-test:
 	$(GO) test ./...
