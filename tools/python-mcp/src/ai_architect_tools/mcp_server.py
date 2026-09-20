@@ -9,9 +9,10 @@ import os
 import sys
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from io import TextIOWrapper
+from typing import cast
 
 import anyio
 from ai_architect_schemas import (
@@ -51,6 +52,10 @@ _active_calls = 0
 _last_activity = time.monotonic()
 
 
+def _platform_attribute(value: object, name: str, default: object = None) -> object:
+    return getattr(value, name, default)
+
+
 def _parent_is_alive(parent_pid: int) -> bool:
     if parent_pid <= 1:
         return False
@@ -59,14 +64,29 @@ def _parent_is_alive(parent_pid: int) -> bool:
 
         synchronize = 0x00100000
         wait_timeout = 0x00000102
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        handle = int(kernel32.OpenProcess(synchronize, False, parent_pid))
+        win_dll = cast(Callable[..., object], _platform_attribute(ctypes, "WinDLL"))
+        kernel32 = win_dll("kernel32", use_last_error=True)
+        open_process = cast(
+            Callable[[int, bool, int], int],
+            _platform_attribute(kernel32, "OpenProcess"),
+        )
+        wait_for_single_object = cast(
+            Callable[[int, int], int],
+            _platform_attribute(kernel32, "WaitForSingleObject"),
+        )
+        close_handle = cast(
+            Callable[[int], object], _platform_attribute(kernel32, "CloseHandle")
+        )
+        get_last_error = cast(
+            Callable[[], int], _platform_attribute(ctypes, "get_last_error")
+        )
+        handle = open_process(synchronize, False, parent_pid)
         if handle == 0:
-            return ctypes.get_last_error() == 5
+            return get_last_error() == 5
         try:
-            return int(kernel32.WaitForSingleObject(handle, 0)) == wait_timeout
+            return wait_for_single_object(handle, 0) == wait_timeout
         finally:
-            kernel32.CloseHandle(handle)
+            close_handle(handle)
     try:
         os.kill(parent_pid, 0)
     except PermissionError:

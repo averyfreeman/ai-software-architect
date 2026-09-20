@@ -11,7 +11,7 @@ import stat
 import sys
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 SCHEMA_VERSION = "1.0.0"
 MAX_DIRECTORIES = 200
@@ -118,10 +118,19 @@ TEXT_EXTENSIONS = {
 }
 
 
+def _platform_attribute(value: object, name: str, default: object = None) -> object:
+    return getattr(value, name, default)
+
+
 def _is_reparse_point(path: Path) -> bool:
     try:
-        attributes = path.lstat().st_file_attributes
-    except (AttributeError, OSError):
+        attributes = cast(
+            int | None,
+            _platform_attribute(path.lstat(), "st_file_attributes", None),
+        )
+    except OSError:
+        return path.is_symlink()
+    if attributes is None:
         return path.is_symlink()
     return bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
 

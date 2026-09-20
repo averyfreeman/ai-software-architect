@@ -9,10 +9,10 @@ import ctypes
 import os
 import re
 import stat
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import closing
 from pathlib import Path, PurePosixPath
-from typing import BinaryIO, Protocol
+from typing import BinaryIO, Protocol, cast
 
 from ai_architect_schemas import SourceFileInput
 
@@ -55,6 +55,17 @@ class SourceReader(Protocol):
     def iter_files(
         self, relative_roots: list[str], suffixes: set[str]
     ) -> Iterator[str]: ...
+
+
+class _WindowsApiFunction(Protocol):
+    argtypes: Sequence[object] | None
+    restype: object
+
+    def __call__(self, *args: object) -> int: ...
+
+
+def _platform_attribute(value: object, name: str, default: object = None) -> object:
+    return getattr(value, name, default)
 
 
 def _normalized_relative(path: str) -> PurePosixPath:
@@ -111,9 +122,11 @@ def validate_inline_python_path(path: str) -> PurePosixPath:
 
 
 def _is_reparse_point(path: Path) -> bool:
-    try:
-        attributes = path.lstat().st_file_attributes
-    except AttributeError:
+    attributes = cast(
+        int | None,
+        _platform_attribute(path.lstat(), "st_file_attributes", None),
+    )
+    if attributes is None:
         return path.is_symlink()
     return bool(attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 
@@ -121,18 +134,26 @@ def _is_reparse_point(path: Path) -> bool:
 def _final_windows_path(handle: BinaryIO) -> Path:
     import msvcrt
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    function = kernel32.GetFinalPathNameByHandleW
+    win_dll = cast(Callable[..., object], _platform_attribute(ctypes, "WinDLL"))
+    kernel32 = win_dll("kernel32", use_last_error=True)
+    function = cast(
+        _WindowsApiFunction,
+        _platform_attribute(kernel32, "GetFinalPathNameByHandleW"),
+    )
     function.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
     function.restype = ctypes.c_uint32
-    os_handle = msvcrt.get_osfhandle(handle.fileno())
+    get_osfhandle = cast(
+        Callable[[int], int], _platform_attribute(msvcrt, "get_osfhandle")
+    )
+    get_last_error = cast(Callable[[], int], _platform_attribute(ctypes, "get_last_error"))
+    os_handle = get_osfhandle(handle.fileno())
     size = function(os_handle, None, 0, 0)
     if size == 0:
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(get_last_error(), "GetFinalPathNameByHandleW failed")
     buffer = ctypes.create_unicode_buffer(size + 1)
     written = function(os_handle, buffer, len(buffer), 0)
     if written == 0 or written >= len(buffer):
-        raise OSError(ctypes.get_last_error(), "GetFinalPathNameByHandleW failed")
+        raise OSError(get_last_error(), "GetFinalPathNameByHandleW failed")
     value = buffer.value
     if value.startswith("\\\\?\\UNC\\"):
         value = "\\\\" + value[8:]
