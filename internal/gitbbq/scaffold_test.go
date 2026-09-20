@@ -89,8 +89,16 @@ func TestProjectGeneratesProjectionsWithoutSecondADRSet(t *testing.T) {
 	if _, err := ScaffoldProject(root, ScaffoldOptions{ProjectName: "Example", Problem: "Keep decisions consumable.", Languages: []string{"go"}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := CreateADR(root, ADRInput{Title: "Use Matt ADRs", Context: "Agents need portable records.", Decision: "Use docs/adr files.", Why: "Matt skills already define the format.", Status: "accepted"}); err != nil {
+	record, err := CreateADR(root, ADRInput{Title: "Use Matt ADRs", Context: "Agents need portable records.", Decision: "Use docs/adr files.", Why: "Matt skills already define the format.", Status: "accepted"})
+	if err != nil {
 		t.Fatal(err)
+	}
+	ledger, err := readOwnershipLedger(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ledger.Files[relativePath(root, record.Path)] == "" {
+		t.Fatalf("created ADR was not added to ownership ledger: %#v", ledger.Files)
 	}
 	projection, err := Project(root)
 	if err != nil {

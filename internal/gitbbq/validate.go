@@ -33,6 +33,9 @@ func ValidateProject(root string) error {
 	if _, err := os.Stat(filepath.Join(root, ContextMapFilename)); err != nil {
 		return fmt.Errorf("missing %s: %w", ContextMapFilename, err)
 	}
+	if _, err := readOwnershipLedger(root); err != nil {
+		return fmt.Errorf("invalid %s: %w", OwnershipFilename, err)
+	}
 	for _, path := range listADRPaths(root) {
 		if _, err := ParseADR(path); err != nil {
 			return err

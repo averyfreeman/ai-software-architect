@@ -41,5 +41,8 @@ func markRemoteConfigured(root, remoteURL string) (GitHabits, error) {
 	if _, err := writeGenerated(root, GitHabitsFilename, data, true); err != nil {
 		return GitHabits{}, fmt.Errorf("persist configured remote: %w", err)
 	}
+	if err := recordExistingOwnership(root, []string{GitHabitsFilename}); err != nil {
+		return GitHabits{}, fmt.Errorf("record configured remote ownership: %w", err)
+	}
 	return config, nil
 }

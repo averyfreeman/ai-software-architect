@@ -84,8 +84,12 @@ func CreateADR(root string, input ADRInput) (ADRRecord, error) {
 		}
 	}
 	body := renderADR(input)
-	if _, err := writeGenerated(root, filepath.ToSlash(filepath.Join(ADRDirectory, filename)), []byte(body), false); err != nil {
+	relative := filepath.ToSlash(filepath.Join(ADRDirectory, filename))
+	if _, err := writeGenerated(root, relative, []byte(body), false); err != nil {
 		return ADRRecord{}, err
+	}
+	if err := recordExistingOwnership(root, []string{relative}); err != nil {
+		return ADRRecord{}, fmt.Errorf("record ADR ownership: %w", err)
 	}
 	return ParseADR(path)
 }
@@ -120,16 +124,29 @@ func ParseADR(path string) (ADRRecord, error) {
 }
 
 func IndexADRs(root string) (ADRIndex, error) {
+	index, created, err := indexADRs(root, true)
+	if err != nil {
+		return ADRIndex{}, err
+	}
+	if created {
+		if err := recordExistingOwnership(root, []string{ADRIndexFilename}); err != nil {
+			return ADRIndex{}, fmt.Errorf("record ADR index ownership: %w", err)
+		}
+	}
+	return index, err
+}
+
+func indexADRs(root string, force bool) (ADRIndex, bool, error) {
 	paths := listADRPaths(root)
 	records := make([]ADRRecord, 0, len(paths))
 	numbers := make(map[int]bool, len(paths))
 	for _, path := range paths {
 		record, err := ParseADR(path)
 		if err != nil {
-			return ADRIndex{}, err
+			return ADRIndex{}, false, err
 		}
 		if numbers[record.Number] {
-			return ADRIndex{}, fmt.Errorf("duplicate ADR number %04d", record.Number)
+			return ADRIndex{}, false, fmt.Errorf("duplicate ADR number %04d", record.Number)
 		}
 		numbers[record.Number] = true
 		records = append(records, record)
@@ -137,19 +154,20 @@ func IndexADRs(root string) (ADRIndex, error) {
 	sort.Slice(records, func(i, j int) bool { return records[i].Number < records[j].Number })
 	index := ADRIndex{SchemaVersion: SchemaVersion, GeneratedAt: time.Now().UTC(), DecisionCount: len(records), Decisions: records}
 	if _, err := os.Stat(filepath.Join(root, ADRDirectory)); os.IsNotExist(err) {
-		return index, nil
+		return index, false, nil
 	} else if err != nil {
-		return ADRIndex{}, err
+		return ADRIndex{}, false, err
 	}
 	data, err := json.MarshalIndent(index, "", "  ")
 	if err != nil {
-		return ADRIndex{}, err
+		return ADRIndex{}, false, err
 	}
 	data = append(data, '\n')
-	if _, err := writeGenerated(root, ADRIndexFilename, data, true); err != nil {
-		return ADRIndex{}, err
+	created, err := writeGenerated(root, ADRIndexFilename, data, force)
+	if err != nil {
+		return ADRIndex{}, false, err
 	}
-	return index, nil
+	return index, created, nil
 }
 
 func listADRPaths(root string) []string {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -32,14 +33,20 @@ func marshalYAML(value any) ([]byte, error) {
 }
 
 func writeGenerated(root, relative string, data []byte, force bool) (bool, error) {
-	clean := filepath.Clean(filepath.FromSlash(relative))
-	if filepath.IsAbs(clean) || clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(os.PathSeparator)) {
-		return false, fmt.Errorf("refusing unsafe generated path %q", relative)
+	clean, err := safeGeneratedPath(relative)
+	if err != nil {
+		return false, fmt.Errorf("refusing unsafe generated path %q: %w", relative, err)
 	}
-	path := filepath.Join(root, clean)
+	path, err := ensureSafeGeneratedTarget(root, clean)
+	if err != nil {
+		return false, err
+	}
 	if info, err := os.Lstat(path); err == nil {
 		if info.Mode()&os.ModeSymlink != 0 {
 			return false, fmt.Errorf("refusing to write symlink %s", relative)
+		}
+		if !info.Mode().IsRegular() {
+			return false, fmt.Errorf("refusing to write non-regular path %s", relative)
 		}
 		if !force {
 			return false, nil
@@ -71,6 +78,69 @@ func writeGenerated(root, relative string, data []byte, force bool) (bool, error
 		return false, err
 	}
 	return true, nil
+}
+
+func ensureSafeGeneratedTarget(root, relative string) (string, error) {
+	clean, err := safeGeneratedPath(relative)
+	if err != nil {
+		return "", err
+	}
+	rootAbsolute, err := filepath.Abs(root)
+	if err != nil {
+		return "", fmt.Errorf("resolve generated root: %w", err)
+	}
+	rootInfo, err := os.Stat(rootAbsolute)
+	if err != nil {
+		return "", fmt.Errorf("stat generated root: %w", err)
+	}
+	if !rootInfo.IsDir() {
+		return "", fmt.Errorf("generated root is not a directory: %s", root)
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(rootAbsolute)
+	if err != nil {
+		return "", fmt.Errorf("resolve generated root: %w", err)
+	}
+	path := filepath.Join(rootAbsolute, filepath.FromSlash(clean))
+	current := rootAbsolute
+	expected := resolvedRoot
+	parts := strings.Split(filepath.ToSlash(clean), "/")
+	for index, part := range parts {
+		current = filepath.Join(current, filepath.FromSlash(part))
+		expected = filepath.Join(expected, filepath.FromSlash(part))
+		info, statErr := os.Lstat(current)
+		if os.IsNotExist(statErr) {
+			break
+		}
+		if statErr != nil {
+			return "", fmt.Errorf("inspect generated path %s: %w", clean, statErr)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("refusing generated path through symlink: %s", clean)
+		}
+		if index < len(parts)-1 && !info.IsDir() {
+			return "", fmt.Errorf("generated path parent is not a directory: %s", clean)
+		}
+		resolved, resolveErr := filepath.EvalSymlinks(current)
+		if resolveErr != nil {
+			return "", fmt.Errorf("resolve generated path %s: %w", clean, resolveErr)
+		}
+		if !sameFilesystemPath(resolved, expected) {
+			return "", fmt.Errorf("refusing generated path through reparse point: %s", clean)
+		}
+		if index == len(parts)-1 && !info.Mode().IsRegular() {
+			return "", fmt.Errorf("refusing generated path with non-regular target: %s", clean)
+		}
+	}
+	return path, nil
+}
+
+func sameFilesystemPath(left, right string) bool {
+	left = filepath.Clean(left)
+	right = filepath.Clean(right)
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(left, right)
+	}
+	return left == right
 }
 
 func loadManifest(root string) (Manifest, error) {

@@ -162,16 +162,21 @@ func Assess(root string) (Assessment, error) {
 }
 
 func Project(root string) (Projection, error) {
+	projection, _, err := projectWithOptions(root, true)
+	return projection, err
+}
+
+func projectWithOptions(root string, force bool) (Projection, []string, error) {
 	if err := ValidateProject(root); err != nil {
-		return Projection{}, err
+		return Projection{}, nil, err
 	}
 	manifest, err := loadManifest(root)
 	if err != nil {
-		return Projection{}, err
+		return Projection{}, nil, err
 	}
-	index, err := IndexADRs(root)
+	index, indexCreated, err := indexADRs(root, force)
 	if err != nil {
-		return Projection{}, err
+		return Projection{}, nil, err
 	}
 	contract := ArchitectureContract{
 		SchemaVersion: SchemaVersion,
@@ -186,20 +191,35 @@ func Project(root string) (Projection, error) {
 	}
 	contractData, err := marshalYAML(contract)
 	if err != nil {
-		return Projection{}, err
+		return Projection{}, nil, err
 	}
-	if _, err := writeGenerated(root, ContractFilename, contractData, true); err != nil {
-		return Projection{}, err
+	contractCreated, err := writeGenerated(root, ContractFilename, contractData, force)
+	if err != nil {
+		return Projection{}, nil, err
 	}
 	plan := renderImplementationPlan(manifest, index)
-	if _, err := writeGenerated(root, ImplementationPlanFilename, []byte(plan), true); err != nil {
-		return Projection{}, err
+	planCreated, err := writeGenerated(root, ImplementationPlanFilename, []byte(plan), force)
+	if err != nil {
+		return Projection{}, nil, err
 	}
 	paths := []string{ContractFilename, ImplementationPlanFilename}
 	if index.DecisionCount > 0 {
 		paths = append(paths, ADRIndexFilename)
 	}
-	return Projection{ADRCount: index.DecisionCount, Paths: paths}, nil
+	created := make([]string, 0, 3)
+	if indexCreated {
+		created = append(created, ADRIndexFilename)
+	}
+	if contractCreated {
+		created = append(created, ContractFilename)
+	}
+	if planCreated {
+		created = append(created, ImplementationPlanFilename)
+	}
+	if err := recordGeneratedOwnership(root, created); err != nil {
+		return Projection{}, nil, err
+	}
+	return Projection{ADRCount: index.DecisionCount, Paths: paths}, created, nil
 }
 
 func SnapshotFiles(root string) ([]string, error) {

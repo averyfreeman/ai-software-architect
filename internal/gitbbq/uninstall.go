@@ -13,12 +13,21 @@ import (
 
 func writeOwnershipLedger(root string, created []string, force bool) (bool, error) {
 	path := filepath.Join(root, filepath.FromSlash(OwnershipFilename))
-	if _, err := os.Lstat(path); err == nil && !force {
-		return false, nil
+	files := make(map[string]string, len(created))
+	existing := false
+	if _, err := os.Lstat(path); err == nil {
+		ledger, readErr := readOwnershipLedger(root)
+		if readErr != nil {
+			return false, readErr
+		}
+		for relative, digest := range ledger.Files {
+			files[relative] = digest
+		}
+		existing = true
 	} else if err != nil && !os.IsNotExist(err) {
 		return false, err
 	}
-	files := make(map[string]string, len(created))
+	changed := false
 	for _, relative := range created {
 		if relative == OwnershipFilename {
 			continue
@@ -27,12 +36,90 @@ func writeOwnershipLedger(root string, created []string, force bool) (bool, erro
 		if err != nil {
 			return false, err
 		}
-		digest, err := hashFile(filepath.Join(root, filepath.FromSlash(clean)))
+		path, err := ensureSafeGeneratedTarget(root, clean)
 		if err != nil {
 			return false, err
 		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			return false, err
+		}
+		if !info.Mode().IsRegular() {
+			return false, fmt.Errorf("owned path is not regular: %s", clean)
+		}
+		digest, err := hashFile(path)
+		if err != nil {
+			return false, err
+		}
+		if files[clean] != digest {
+			changed = true
+		}
 		files[clean] = digest
 	}
+	if existing && !changed {
+		return false, nil
+	}
+	return writeOwnershipData(root, files, force || existing)
+}
+
+func recordGeneratedOwnership(root string, created []string) error {
+	if len(created) == 0 {
+		return nil
+	}
+	ledger, err := readOwnershipLedger(root)
+	if err != nil {
+		return err
+	}
+	files := make(map[string]string, len(ledger.Files)+len(created))
+	for relative, digest := range ledger.Files {
+		files[relative] = digest
+	}
+	changed := false
+	for _, relative := range created {
+		if relative == OwnershipFilename {
+			continue
+		}
+		clean, err := safeGeneratedPath(relative)
+		if err != nil {
+			return err
+		}
+		path, err := ensureSafeGeneratedTarget(root, clean)
+		if err != nil {
+			return err
+		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("owned path is not regular: %s", clean)
+		}
+		digest, err := hashFile(path)
+		if err != nil {
+			return err
+		}
+		if files[clean] != digest {
+			files[clean] = digest
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	_, err = writeOwnershipData(root, files, true)
+	return err
+}
+
+func recordExistingOwnership(root string, created []string) error {
+	if _, err := os.Lstat(filepath.Join(root, filepath.FromSlash(OwnershipFilename))); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return recordGeneratedOwnership(root, created)
+}
+
+func writeOwnershipData(root string, files map[string]string, force bool) (bool, error) {
 	data, err := json.MarshalIndent(OwnershipLedger{Version: 1, Files: files}, "", "  ")
 	if err != nil {
 		return false, err
@@ -64,7 +151,11 @@ func AssessUninstall(root string) (UninstallAssessment, error) {
 			assessment.Conflicts = append(assessment.Conflicts, relative)
 			continue
 		}
-		path := filepath.Join(root, filepath.FromSlash(clean))
+		path, err := ensureSafeGeneratedTarget(root, clean)
+		if err != nil {
+			assessment.Conflicts = append(assessment.Conflicts, clean)
+			continue
+		}
 		info, err := os.Lstat(path)
 		if os.IsNotExist(err) {
 			assessment.Missing = append(assessment.Missing, clean)
@@ -93,21 +184,46 @@ func Uninstall(root string) (UninstallResult, error) {
 		return UninstallResult{}, err
 	}
 	result := UninstallResult{Root: assessment.Root, Removed: []string{}, Preserved: append([]string(nil), assessment.Conflicts...), Missing: append([]string(nil), assessment.Missing...)}
+	ledger, err := readOwnershipLedger(assessment.Root)
+	if err != nil {
+		return result, err
+	}
 	for _, relative := range assessment.Removable {
-		if err := os.Remove(filepath.Join(assessment.Root, filepath.FromSlash(relative))); err != nil {
+		clean, err := safeGeneratedPath(relative)
+		if err != nil {
+			appendUnique(&result.Preserved, relative)
+			continue
+		}
+		path, err := ensureSafeGeneratedTarget(assessment.Root, clean)
+		if err != nil {
+			appendUnique(&result.Preserved, clean)
+			continue
+		}
+		info, err := os.Lstat(path)
+		if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+			appendUnique(&result.Preserved, clean)
+			continue
+		}
+		digest, err := hashFile(path)
+		if err != nil || digest != ledger.Files[clean] {
+			appendUnique(&result.Preserved, clean)
+			continue
+		}
+		if err := os.Remove(path); err != nil {
 			return result, fmt.Errorf("remove %s: %w", relative, err)
 		}
-		result.Removed = append(result.Removed, relative)
+		result.Removed = append(result.Removed, clean)
 	}
 	ledgerPath := filepath.Join(assessment.Root, filepath.FromSlash(OwnershipFilename))
-	if len(assessment.Conflicts) > 0 {
-		result.Preserved = append(result.Preserved, OwnershipFilename)
+	if len(result.Preserved) > 0 {
+		appendUnique(&result.Preserved, OwnershipFilename)
+	} else if _, err := ensureSafeGeneratedTarget(assessment.Root, OwnershipFilename); err != nil {
+		appendUnique(&result.Preserved, OwnershipFilename)
 	} else if err := os.Remove(ledgerPath); err == nil {
 		result.Removed = append(result.Removed, OwnershipFilename)
 	} else if !os.IsNotExist(err) {
 		return result, fmt.Errorf("remove %s: %w", OwnershipFilename, err)
 	}
-	removeEmptyParents(assessment.Root, result.Removed)
 	sort.Strings(result.Removed)
 	sort.Strings(result.Preserved)
 	sort.Strings(result.Missing)
@@ -115,7 +231,11 @@ func Uninstall(root string) (UninstallResult, error) {
 }
 
 func readOwnershipLedger(root string) (OwnershipLedger, error) {
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(OwnershipFilename)))
+	path, err := ensureSafeGeneratedTarget(root, OwnershipFilename)
+	if err != nil {
+		return OwnershipLedger{}, fmt.Errorf("read %s: %w", OwnershipFilename, err)
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return OwnershipLedger{}, fmt.Errorf("read %s: %w", OwnershipFilename, err)
 	}
@@ -131,6 +251,12 @@ func readOwnershipLedger(root string) (OwnershipLedger, error) {
 	if ledger.Files == nil {
 		return OwnershipLedger{}, fmt.Errorf("ownership ledger files are required")
 	}
+	for relative := range ledger.Files {
+		clean, err := safeGeneratedPath(relative)
+		if err != nil || clean != relative {
+			return OwnershipLedger{}, fmt.Errorf("ownership ledger contains unsafe path %q", relative)
+		}
+	}
 	return ledger, nil
 }
 
@@ -144,6 +270,15 @@ func hashFile(path string) (string, error) {
 }
 
 func safeGeneratedPath(relative string) (string, error) {
+	if relative == "" || strings.Contains(relative, "\\") || strings.HasPrefix(relative, "/") || (len(relative) >= 2 && relative[1] == ':') {
+		return "", fmt.Errorf("refusing unsafe owned path %q", relative)
+	}
+	parts := strings.Split(relative, "/")
+	for _, part := range parts {
+		if part == "" || part == "." || part == ".." {
+			return "", fmt.Errorf("refusing unsafe owned path %q", relative)
+		}
+	}
 	clean := filepath.Clean(filepath.FromSlash(relative))
 	if filepath.IsAbs(clean) || clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(os.PathSeparator)) {
 		return "", fmt.Errorf("refusing unsafe owned path %q", relative)
@@ -151,23 +286,11 @@ func safeGeneratedPath(relative string) (string, error) {
 	return filepath.ToSlash(clean), nil
 }
 
-func removeEmptyParents(root string, removed []string) {
-	directories := make(map[string]bool)
-	for _, relative := range removed {
-		parent := filepath.Dir(filepath.FromSlash(relative))
-		for parent != "." && parent != string(filepath.Separator) {
-			directories[parent] = true
-			parent = filepath.Dir(parent)
+func appendUnique(values *[]string, value string) {
+	for _, existing := range *values {
+		if existing == value {
+			return
 		}
 	}
-	paths := make([]string, 0, len(directories))
-	for relative := range directories {
-		paths = append(paths, relative)
-	}
-	sort.Slice(paths, func(i, j int) bool {
-		return strings.Count(paths[i], string(filepath.Separator)) > strings.Count(paths[j], string(filepath.Separator))
-	})
-	for _, relative := range paths {
-		_ = os.Remove(filepath.Join(root, filepath.FromSlash(relative)))
-	}
+	*values = append(*values, value)
 }

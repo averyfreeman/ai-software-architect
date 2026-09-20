@@ -101,6 +101,28 @@ func TestMigrateConvertsValidatedADRsAndPreservesLegacyFiles(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, ".gitbbq", "migration", "legacy", GitHabitsFilename)); err != nil {
 		t.Fatalf("legacy Git habits archive missing: %v", err)
 	}
+	for _, required := range []string{ADRIndexFilename, ContractFilename, ImplementationPlanFilename, GitHabitsFilename, filepath.ToSlash(filepath.Join(".gitbbq", "migration", "legacy", GitHabitsFilename))} {
+		if !containsPath(result.Created, required) {
+			t.Fatalf("migration did not report created artifact %q: %#v", required, result.Created)
+		}
+	}
+	ledger, err := readOwnershipLedger(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, owned := range []string{targetADR[0], filepath.Join(root, ADRIndexFilename), filepath.Join(root, ContractFilename), filepath.Join(root, ImplementationPlanFilename), filepath.Join(root, GitHabitsFilename), filepath.Join(root, ".gitbbq", "migration", "legacy", GitHabitsFilename)} {
+		relative := relativePath(root, owned)
+		if ledger.Files[relative] == "" {
+			t.Fatalf("migrated artifact is not owned: %s", relative)
+		}
+	}
+	assessment, err := AssessUninstall(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(assessment.Conflicts) != 0 {
+		t.Fatalf("migrated ownership conflicts = %#v", assessment.Conflicts)
+	}
 	if err := ValidateProject(root); err != nil {
 		t.Fatalf("migrated project is invalid: %v", err)
 	}

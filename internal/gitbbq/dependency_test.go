@@ -28,4 +28,13 @@ func TestUpdateMattDependencyKeepsProjectPathAndMetadataInSync(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, MattDependencyMetadataPath)); err != nil {
 		t.Fatal(err)
 	}
+	assessment, err := AssessUninstall(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, relative := range []string{ManifestFilename, MattDependencyMetadataPath} {
+		if containsPath(assessment.Conflicts, relative) {
+			t.Fatalf("updated dependency artifact remained a conflict: %#v", assessment.Conflicts)
+		}
+	}
 }

@@ -94,7 +94,8 @@ record, boundary, and multi-category secret-scan regression tests cover the
 slice.
 
 The Python schemas, Codex hooks, packaging runtime, and legacy Python MCP package
-remain in place for compatibility. Remaining migration gates are fixture-by-
-fixture parity for the rest of the deterministic surface, a Go Codex runtime,
-clean-machine packaging, lifecycle validation, and behavioral evaluation before
-Python removal. Bundle validation does not yet replace the Codex pre-write hook.
+remain in place for compatibility. Git BBQ now covers the deterministic migration,
+projection artifact, ownership, uninstall, and five-event lifecycle parity gate;
+the remaining gates are the separate exploratory evaluation evidence, a Go Codex
+runtime, clean-machine packaging, and behavioral evaluation before Python removal.
+Bundle validation does not yet replace the Codex pre-write hook.

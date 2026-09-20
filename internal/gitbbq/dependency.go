@@ -38,5 +38,8 @@ func UpdateMattDependency(root string, dependency MattDependency) (Manifest, err
 	if _, err := writeGenerated(root, filepath.ToSlash(MattDependencyMetadataPath), dependencyData, true); err != nil {
 		return Manifest{}, err
 	}
+	if err := recordExistingOwnership(root, []string{ManifestFilename, MattDependencyMetadataPath}); err != nil {
+		return Manifest{}, fmt.Errorf("record dependency ownership: %w", err)
+	}
 	return manifest, nil
 }

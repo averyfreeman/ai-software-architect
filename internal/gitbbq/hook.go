@@ -104,6 +104,10 @@ func RenderCodexHookResponse(result HookResult) map[string]any {
 			"systemMessage": result.Message,
 		}
 	default:
-		return map[string]any{"systemMessage": result.Message}
+		return map[string]any{
+			"continue":      false,
+			"stopReason":    result.Message,
+			"systemMessage": result.Message,
+		}
 	}
 }

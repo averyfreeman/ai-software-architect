@@ -31,6 +31,22 @@ func TestWorkspaceHookFailsClosedWithoutScaffold(t *testing.T) {
 	}
 }
 
+func TestWorkspaceHookFailsClosedForEveryEventResponse(t *testing.T) {
+	for _, event := range RequiredHookEvents {
+		response := RenderCodexHookResponse(HandleHookInWorkspace(t.TempDir(), HookEvent{Event: event}))
+		if event == "PreToolUse" {
+			output, ok := response["hookSpecificOutput"].(map[string]any)
+			if !ok || output["permissionDecision"] != "deny" {
+				t.Fatalf("event %s response = %#v", event, response)
+			}
+			continue
+		}
+		if response["continue"] != false || response["stopReason"] == "" {
+			t.Fatalf("event %s did not fail closed: %#v", event, response)
+		}
+	}
+}
+
 func TestGeneratedHookConfigContainsExactlyRequiredEvents(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, filepath.Dir(HookConfigPath)), 0o755); err != nil {

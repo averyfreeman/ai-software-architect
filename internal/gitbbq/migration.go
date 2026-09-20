@@ -125,7 +125,7 @@ func Migrate(root string, force bool) (MigrationResult, error) {
 	if err != nil {
 		return MigrationResult{}, err
 	}
-	archived, archivePath, err := archiveLegacyGitHabits(root, force)
+	archived, archivePath, archiveCreated, err := archiveLegacyGitHabits(root, force)
 	if err != nil {
 		return MigrationResult{}, err
 	}
@@ -160,6 +160,9 @@ func Migrate(root string, force bool) (MigrationResult, error) {
 		if created {
 			result.Created = append(result.Created, GitHabitsFilename)
 		}
+		if archiveCreated {
+			result.Created = append(result.Created, filepath.ToSlash(filepath.Join(".gitbbq", "migration", "legacy", GitHabitsFilename)))
+		}
 	}
 	for _, planned := range plannedADRs {
 		created, err := writeGenerated(root, planned.Relative, planned.Content, false)
@@ -171,11 +174,25 @@ func Migrate(root string, force bool) (MigrationResult, error) {
 			result.MigratedADRs++
 		}
 	}
-	if len(plannedADRs) > 0 {
-		if _, err := IndexADRs(root); err != nil {
-			return MigrationResult{}, err
+	projection, projectionCreated, err := projectWithOptions(root, false)
+	if err != nil {
+		return MigrationResult{}, fmt.Errorf("write migration projections: %w", err)
+	}
+	result.Created = append(result.Created, projectionCreated...)
+	for _, relative := range projection.Paths {
+		created := false
+		for _, generated := range projectionCreated {
+			if generated == relative {
+				created = true
+				break
+			}
 		}
-		result.Created = append(result.Created, ADRIndexFilename)
+		if !created {
+			result.Skipped = append(result.Skipped, relative)
+		}
+	}
+	if err := recordGeneratedOwnership(root, result.Created); err != nil {
+		return MigrationResult{}, fmt.Errorf("record migration ownership: %w", err)
 	}
 	if err := ValidateProject(root); err != nil {
 		return MigrationResult{}, fmt.Errorf("validate migrated project: %w", err)
@@ -263,30 +280,27 @@ func planLegacyADRs(root string) ([]plannedMigrationADR, error) {
 	return plans, nil
 }
 
-func archiveLegacyGitHabits(root string, force bool) ([]string, string, error) {
+func archiveLegacyGitHabits(root string, force bool) ([]string, string, bool, error) {
 	path := filepath.Join(root, GitHabitsFilename)
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return nil, "", nil
+		return nil, "", false, nil
 	}
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 	if _, validErr := ReadGitHabits(root); validErr == nil {
-		return nil, "", nil
+		return nil, "", false, nil
 	}
 	if !force {
-		return nil, "", fmt.Errorf("legacy %s must be archived with --force before migration", GitHabitsFilename)
+		return nil, "", false, fmt.Errorf("legacy %s must be archived with --force before migration", GitHabitsFilename)
 	}
 	relative := filepath.ToSlash(filepath.Join(".gitbbq", "migration", "legacy", GitHabitsFilename))
 	created, err := writeGenerated(root, relative, data, false)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
-	if !created {
-		return []string{relative}, relative, nil
-	}
-	return []string{relative}, relative, nil
+	return []string{relative}, relative, created, nil
 }
 
 func legacyFrontmatter(content string) (string, string, error) {

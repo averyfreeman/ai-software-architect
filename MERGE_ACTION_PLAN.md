@@ -1,9 +1,9 @@
 # Merge action plan: agent-first architecture scaffold
 
 Status: Git BBQ lifecycle slices 1–14 are complete through `git-bbq-v0.1.13`;
-M-15 migration and uninstall increments are published through
-`git-bbq-v0.1.17`, and the
-staged Go migration remains in progress. The roadmap has a fixed 17-slice
+the deterministic M-15 migration, artifact, ownership, hook, and uninstall
+parity gate is verified in the current worktree, while the M-15 exploratory
+evaluation gate and staged Go migration remain in progress. The roadmap has a fixed 17-slice
 denominator: completed work reduces the remaining count; it never adds a new
 slice merely because implementation details become visible.
 
@@ -33,12 +33,13 @@ so it is retired. The active ledger is:
 | M-12 | Fixture parity for contracts, protected paths, Windows behavior, and hook protocol | Complete: `git-bbq-v0.1.11` |
 | M-13 | Go-based Codex packaging, release, notices, and clean-machine install tests | Complete: `git-bbq-v0.1.12` |
 | M-14 | Legacy scaffold language-profile parity for Java and C# | Complete: `git-bbq-v0.1.13` |
-| M-15 | Approved migration command plus exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates | In progress: `git-bbq-v0.1.17` covers migration, ownership, and uninstall gates |
+| M-15 | Approved migration command plus exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates | In progress: deterministic migration/artifact/ownership/hook/uninstall parity is verified in the current worktree; exploratory evaluation evidence remains |
 
 The next active slice is `M-15`, the approved migration command plus exploratory
-and lifecycle gates. It is already counted below. M-15 is in progress with the
-read-only assessment, additive migration apply path, and the next immutable
-ownership/uninstall gate.
+and lifecycle gates. It is already counted below. The deterministic migration,
+artifact, ownership, hook, and uninstall parity portion is complete in this
+worktree; M-15 remains active until its separate exploratory evaluation evidence
+is recorded.
 
 Three concrete slices remain after `M-14`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
@@ -81,9 +82,12 @@ Implemented:
   preferences are never treated as permission.
 - Read-only `git-bbq migrate` inventory plus an additive `--approve` migration
   path that archives incompatible legacy Git habits, converts validated ADRs,
-  preserves `.ai-architect/`, and validates the resulting project.
+  preserves `.ai-architect/`, generates the contract, implementation-plan, and
+  ADR-index projections without overwriting conflicts, and validates the resulting
+  project.
 - Hash-based ownership ledgers and an approval-gated `git-bbq uninstall` path
-  remove only unchanged generated files while preserving modified files.
+  remove only unchanged generated files while preserving modified, symlinked,
+  non-regular, and unowned parent paths.
 - An official Go MCP STDIO adapter with five read-only tools: contract validation,
   artifact scanning, complete bundle validation, decision listing, and bounded
   inline dependency analysis.
@@ -368,18 +372,34 @@ The correct/incorrect action examples in each ADR serve the same purpose locally
 they make the expected action and failure outcome explicit. They are examples,
 not hidden policies; the actual policy remains in the scoped skill or `AGENTS.md`.
 
-## Validation evidence from this implementation
+## Validation evidence from the current deterministic M-15 slice
+
+The current worktree has focused regression evidence for additive migration,
+generated projection artifacts, merged ownership hashes, read-only assessment,
+symlink/reparse-point parent refusal, traversal rejection, uninstall rechecks,
+preservation of unowned directories, and fail-closed responses for all five
+Codex lifecycle events. The slice does not claim the separate exploratory
+evaluation gate, clean-machine publication, merge, push, or release operations.
 
 Passed:
 
 ```text
-go test ./...
-go test -race ./...
-go build ./...
-go vet ./...
+uv lock --check
 uv run ruff check .
-uv run pytest shared/schemas/tests/test_models.py tools/python-mcp/tests/test_contracts.py tools/python-mcp/tests/test_repository_tools.py
+uv run mypy
+uv run pytest -q                 # 182 passed, 1 skipped (Windows-only fixture)
+go test ./...
+go vet ./...
+go build ./cmd/ai-architect ./cmd/ai-architect-mcp ./cmd/git-bbq
+go test -race ./...
 ```
+
+The focused M-15 regression command `go test ./internal/gitbbq ./cmd/git-bbq`
+passes migration artifact/ownership checks, symlinked-parent and traversal
+refusal, uninstall rechecks, unowned-directory preservation, and fail-closed
+responses for all five hook events. The race-enabled Go suite also passes. The
+full deterministic chain above was run with isolated temporary uv and Go caches
+because the host default caches are permission-protected.
 
 The real CLI was smoke-tested in an isolated temporary project: setup generated
 the selected files, `decision new` created `ADR-001`, `decision check` passed, and
@@ -391,15 +411,9 @@ decisions, exact contract references, bounded narratives, and secret-value
 redaction. A fresh CLI smoke first rejected an accepted ADR whose ID was absent
 from the contract, then passed after the exact `decision_ids` link was added.
 
-Known baseline caveat: the AI repository had unrelated dirty packaging/control-
-plane edits before this work. The current full Python suite reports 169 passing,
-2 failing, and 1 skipped. The failures are
-`tests/packaging/test_codex_control_plane.py::test_turn_state_is_minimal_and_stale_files_are_bounded`
-and
-`tests/packaging/test_openai_plugin_submission.py::test_openai_package_has_windows_explorer_compatible_member_paths`;
-both exercise pre-existing dirty control-plane/runtime-packaging changes rather
-than the new Go core. The full suite must be rerun from a clean worktree before
-using it as migration evidence.
+The current deterministic run records the exact command and result in the
+runner handoff. No generated artifact, release package, evaluation ledger, or
+packaged output was hand-edited during this slice.
 
 ## References and implementation files
 

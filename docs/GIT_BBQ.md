@@ -45,13 +45,15 @@ This command is read-only by default: it inventories `.ai-architect` artifacts,
 proposed Matt-native targets, conflicts, and the explicit-approval boundary.
 `git-bbq migrate [path] --approve --json` applies an additive migration, keeps
 `.ai-architect/`, converts validated ADRs under `docs/adr/`, and archives an
-incompatible legacy `.githabits.yaml` before replacing it. `--force` is required
-for that legacy-config replacement.
+incompatible legacy `.githabits.yaml` before replacing it. It also creates the
+contract, implementation-plan, and ADR-index projections without overwriting
+pre-existing conflicts. `--force` is required for that legacy-config replacement.
 
 Every new scaffold records hashes in `.gitbbq/ownership.json`. Run
 `git-bbq uninstall [path] --json` to review removable files; only
 `git-bbq uninstall [path] --approve` removes unchanged files. Modified,
-symlinked, and non-regular files are reported as conflicts and preserved.
+symlinked, reparse-point, and non-regular files or parent paths are reported as
+conflicts and preserved. Unowned directories are preserved as well.
 
 Language selection is explicit. Supported profiles are Go, Python, TypeScript,
 JavaScript, Rust, Java, and C#. Git profile selection is also explicit: `manual` and
