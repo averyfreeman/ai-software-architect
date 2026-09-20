@@ -34,12 +34,15 @@ so it is retired. The active ledger is:
 | M-13 | Go-based Codex packaging, release, notices, and clean-machine install tests | Complete: `git-bbq-v0.1.12` |
 | M-14 | Legacy scaffold language-profile parity for Java and C# | Complete: `git-bbq-v0.1.13` |
 | M-15 | Approved migration command plus exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates | In progress: deterministic migration/artifact/ownership/hook/uninstall parity is verified in the current worktree; exploratory evaluation evidence remains |
+| M-16 | Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified | Deterministic benchmark implemented: ranking, latency, context reduction, rebuild, stale-document, and corruption-recovery evidence is generated from the versioned fixture; sqlite-vec is not selected |
 
 The next active slice is `M-15`, the approved migration command plus exploratory
 and lifecycle gates. It is already counted below. The deterministic migration,
 artifact, ownership, hook, and uninstall parity portion is complete in this
 worktree; M-15 remains active until its separate exploratory evaluation evidence
-is recorded.
+is recorded. The M-16 benchmark is now the maintained evidence path for the
+retrieval gate; it does not authorize a vector dependency without a measured
+material improvement.
 
 Three concrete slices remain after `M-14`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
@@ -315,6 +318,26 @@ The gate must measure at least recall@k or MRR/nDCG on real project questions,
 answer-support coverage, p50/p95 latency, token/context reduction, index rebuild
 correctness, stale-document behavior, and failure recovery. A small project with
 dozens of ADRs is normally not enough evidence for a vector database.
+
+The deterministic M-16 harness is maintained at
+`tools/retrieval_benchmark/benchmark.py`, with its versioned corpus at
+`tests/fixtures/retrieval/m16.json` and operator documentation in
+`docs/M16_RETRIEVAL_BENCHMARK.md`. It keeps a JSON lexical scan as a transparent
+reference and evaluates the SQLite FTS5 projection against the same labels. The
+generated report is written under `.tmp/retrieval/`; it is disposable evidence,
+not a hand-maintained source file. The gate currently selects FTS5 and records
+sqlite-vec as unselected until a like-for-like representative comparison shows
+a material improvement.
+
+The current 25-iteration generated report records FTS5 recall@3 `1.0`, MRR@5
+`1.0`, nDCG@5 `0.989965`, answer-support coverage@5 `1.0`, p50/p95 latency
+`0.053875`/`0.069883` ms across 200 query samples, and mean context reduction
+`0.612606`. Both canonical-order and reversed-order rebuilds match all 13
+documents; the stale replacement removes the old body and indexes the new one;
+corruption is detected and recovery rebuilds all 13 documents. These latency
+values are descriptive for this host and fixture, not production capacity
+claims. The fixture SHA-256 is recorded in the generated report so the evidence
+can be reproduced without editing it.
 
 OpenAI’s official embeddings documentation lists `text-embedding-3-large` with a
 default 3072-dimensional output and a `dimensions` shortening parameter. That

@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "documents": [
+    {
+      "id": "adr-canonical-artifacts",
+      "title": "Canonical architecture artifacts",
+      "body": "Markdown, YAML, and JSON files remain the portable source of truth. Retrieval indexes are derived copies that can be discarded and rebuilt without changing accepted decisions."
+    },
+    {
+      "id": "adr-hook-lifecycle",
+      "title": "Codex hook lifecycle",
+      "body": "Git BBQ installs UserPromptSubmit, PreToolUse, PostToolUse, PostCompact, and Stop. An invalid workspace or hook configuration fails closed with an explicit denial."
+    },
+    {
+      "id": "adr-additive-migration",
+      "title": "Additive legacy migration",
+      "body": "Approved migration preserves the legacy ai-architect tree, converts validated decisions into docs/adr, archives incompatible Git habits, and does not overwrite pre-existing projection conflicts."
+    },
+    {
+      "id": "adr-ownership-uninstall",
+      "title": "Ownership-aware uninstall",
+      "body": "The ownership ledger records generated-file hashes. Uninstall removes only unchanged regular files, while modified, missing, symlinked, reparse-point, and unowned paths remain preserved."
+    },
+    {
+      "id": "adr-fts5-baseline",
+      "title": "SQLite FTS5 retrieval baseline",
+      "body": "SQLite FTS5 provides a local keyword retrieval baseline over title and body fields. The index is disposable, rebuildable, and separate from canonical architecture documents."
+    },
+    {
+      "id": "adr-vector-gate",
+      "title": "Vector retrieval decision gate",
+      "body": "Do not add sqlite-vec or external embeddings until representative project questions show a material ranking improvement over FTS5 that justifies dependency, rebuild, backup, and packaging costs."
+    },
+    {
+      "id": "adr-approved-git",
+      "title": "Approved Git operations",
+      "body": "Git habits describe preferences, but planning and execution remain separate. Commit, tag, push, and remote actions require explicit approval and validated commands."
+    },
+    {
+      "id": "adr-static-inspection",
+      "title": "Bounded static inspection",
+      "body": "Repository analysis treats project files as untrusted data. It reads bounded allowlisted text and never imports, executes, compiles, or tests analyzed application code."
+    },
+    {
+      "id": "adr-index-recovery",
+      "title": "Derived index recovery",
+      "body": "A retrieval database is derived state. Corruption or a missing index is detected, discarded, and recovered by rebuilding from the canonical document set."
+    },
+    {
+      "id": "adr-windows-packaging",
+      "title": "Cross-platform generated paths",
+      "body": "Generated paths must remain safe on Windows and Unix. Reparse-point, symlink, traversal, and non-regular path behavior is validated before writes or cleanup."
+    },
+    {
+      "id": "adr-matt-semantic-source",
+      "title": "Semantic source vocabulary",
+      "body": "CONTEXT.md, CONTEXT-MAP.md, and docs/adr provide vocabulary and decision history. Git BBQ projections must not create a second competing architecture history."
+    },
+    {
+      "id": "adr-context-budget",
+      "title": "Context budget retrieval",
+      "body": "Retrieval should return the smallest top-k document set that supports the answer. Context reduction is measured against the full corpus while answer-support terms remain covered."
+    },
+    {
+      "id": "adr-stale-source",
+      "title": "Stale derived documents",
+      "body": "This stale derived entry contains obsolete material and should disappear after a canonical rebuild; the old body is not authoritative."
+    }
+  ],
+  "queries": [
+    {
+      "id": "q-canonical-source",
+      "query": "Which files remain the source of truth when a retrieval index is rebuilt",
+      "relevant": ["adr-canonical-artifacts", "adr-index-recovery"],
+      "support_terms": ["Markdown", "YAML", "JSON"]
+    },
+    {
+      "id": "q-migration",
+      "query": "How does approved legacy migration preserve artifacts and Git habits",
+      "relevant": ["adr-additive-migration"],
+      "support_terms": ["legacy", "docs/adr", "archives"]
+    },
+    {
+      "id": "q-ownership",
+      "query": "When can uninstall remove a generated file",
+      "relevant": ["adr-ownership-uninstall"],
+      "support_terms": ["hashes", "unchanged", "regular"]
+    },
+    {
+      "id": "q-hooks",
+      "query": "Which lifecycle events are required and what happens for an invalid workspace",
+      "relevant": ["adr-hook-lifecycle"],
+      "support_terms": ["UserPromptSubmit", "PreToolUse", "fails closed"]
+    },
+    {
+      "id": "q-vector-gate",
+      "query": "When should sqlite-vec be introduced instead of FTS5",
+      "relevant": ["adr-vector-gate", "adr-fts5-baseline"],
+      "support_terms": ["material", "ranking", "dependency"]
+    },
+    {
+      "id": "q-static-safety",
+      "query": "How is repository inspection kept safe from executing project code",
+      "relevant": ["adr-static-inspection"],
+      "support_terms": ["untrusted", "allowlisted", "executes"]
+    },
+    {
+      "id": "q-context",
+      "query": "How can retrieval reduce context while preserving answer support",
+      "relevant": ["adr-context-budget", "adr-canonical-artifacts"],
+      "support_terms": ["top-k", "context", "supports"]
+    },
+    {
+      "id": "q-recovery",
+      "query": "How are stale documents and corrupted retrieval indexes recovered",
+      "relevant": ["adr-index-recovery", "adr-stale-source"],
+      "support_terms": ["corruption", "rebuild", "canonical"]
+    }
+  ],
+  "stale_case": {
+    "document_id": "adr-stale-source",
+    "query": "stale derived entry obsolete",
+    "replacement_query": "fresh replacement body searchable",
+    "replacement": {
+      "title": "Fresh source replacement",
+      "body": "The current replacement body is searchable after the canonical source rebuild and the legacy body is no longer indexed."
+    }
+  }
+}
