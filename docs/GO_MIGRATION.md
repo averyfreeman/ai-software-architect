@@ -98,4 +98,6 @@ remain in place for compatibility. Git BBQ now covers the deterministic migratio
 projection artifact, ownership, uninstall, and five-event lifecycle parity gate;
 the remaining gates are the separate exploratory evaluation evidence, a Go Codex
 runtime, clean-machine packaging, and behavioral evaluation before Python removal.
-Bundle validation does not yet replace the Codex pre-write hook.
+Bundle validation does not yet replace the Codex pre-write hook. See
+[`M17_RUNTIME_RETIREMENT_READINESS.md`](M17_RUNTIME_RETIREMENT_READINESS.md) for
+the current no-cutover assessment and the exact candidate-specific handoff.

@@ -35,6 +35,7 @@ so it is retired. The active ledger is:
 | M-14 | Legacy scaffold language-profile parity for Java and C# | Complete: `git-bbq-v0.1.13` |
 | M-15 | Approved migration command plus exploratory evaluations, uninstall, immutability, artifact, and lifecycle gates | In progress: deterministic migration/artifact/ownership/hook/uninstall parity is verified in the current worktree; exploratory evaluation evidence remains |
 | M-16 | Retrieval benchmark gate: SQLite FTS5 first, sqlite-vec only if justified | Deterministic benchmark implemented: ranking, latency, context reduction, rebuild, stale-document, and corruption-recovery evidence is generated from the versioned fixture; sqlite-vec is not selected |
+| M-17 | Python runtime retirement after every preceding gate passes | Not ready: M-15 exploratory evidence, Go Codex host runtime, package/clean-machine, lifecycle, behavioral, and candidate release-evidence gates remain; compatibility path is retained |
 
 The next active slice is `M-15`, the approved migration command plus exploratory
 and lifecycle gates. It is already counted below. The deterministic migration,
@@ -43,6 +44,14 @@ worktree; M-15 remains active until its separate exploratory evaluation evidence
 is recorded. The M-16 benchmark is now the maintained evidence path for the
 retrieval gate; it does not authorize a vector dependency without a measured
 material improvement.
+
+The M-17 readiness assessment is recorded in
+`docs/M17_RUNTIME_RETIREMENT_READINESS.md`. The Go core and deterministic M-16
+baseline do not authorize Python removal: M-15 exploratory evidence, the Go
+Codex host runtime, package and clean-machine acceptance, Codex Desktop lifecycle,
+behavioral evaluation, and exact-candidate release evidence remain outstanding.
+The Python schemas, hooks, packaging runtime, legacy MCP package, and adapters
+remain in place until those gates pass.
 
 Three concrete slices remain after `M-14`. This count is the fixed remainder
 of the 17-slice roadmap, not a list that grows when a slice is decomposed:
