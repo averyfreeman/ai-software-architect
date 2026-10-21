@@ -12,6 +12,52 @@ documentation.
 
 ## Snapshot
 
+### Release 0.2.4 integration note (2026-10-21)
+
+Version `0.2.4` updates dependencies and fixes the security issue discussed in
+PR #28: a command meant to read project files could run project code instead.
+Shell commands can now start only the reader included with the plugin. The host's
+file-reading tools remain available when more evidence is needed.
+
+The code separates three responsibilities:
+
+- `control_plane.py` checks the command and its settings. It accepts only the
+  exact `repository_snapshot_command`, a trusted shell, `login=false` to disable
+  login profiles, and the active workspace.
+- `snapshot_launch.py` selects trusted shell locations and quotes paths for
+  PowerShell or Bash. Characters in a path must stay part of the path; the shell
+  must not interpret them as commands or options.
+- `repository_snapshot.py` reads files through Python's file API. It limits how
+  much it reads and never runs the project's code.
+
+Tests check the `PreToolUse` hook with real PowerShell and Git Bash commands on
+Windows. GitHub CI also runs the shared Bash and release-file collection tests on
+macOS and Linux. An installable package still needs separate tests on each system.
+
+For the macOS contributor:
+
+- Keep PR #28's `RuntimeTarget` for choosing package paths. Use
+  `quote_snapshot_command(executable, shell)` to quote the reader command. Keep
+  shell selection and command checks in the shared modules. Do not allow general
+  shell reads again or default to Windows on an unsupported system.
+- Make `repository_snapshot_command` use the macOS executable path on macOS.
+  Version `0.2.4` still selects the Windows path. Before enabling macOS support,
+  run the shared security tests and check that the reader works from the extracted
+  macOS package.
+- Add `build-macos-aarch64` to `collect-release-assets.needs` so collection waits
+  for the macOS build. Add `--target aarch64-darwin` to the collection command so
+  it expects the macOS ZIP. Each build may keep its own checksum file, but publish
+  only the final combined `SHA256SUMS.txt` and the platform ZIPs.
+- Put Windows-only API calls behind explicit `sys.platform == "win32"` checks.
+  Keep strict type checking enabled on both systems. Run permission tests on the
+  system they cover, and run shared data-contract tests on both systems.
+- Check that extracting the macOS ZIP preserves permission to run its executable.
+  Then test installation, approval of all five hooks, the complete workflow, and
+  successful uninstallation on the first attempt.
+
+The snapshot below records the original handoff from July 2026. For current
+release requirements, see [RELEASING.md](RELEASING.md).
+
 ```yaml
 handoff_date: 2026-07-21
 branch: main

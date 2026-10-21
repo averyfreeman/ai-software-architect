@@ -64,8 +64,13 @@ It currently:
 2. derives the plugin version from that tag;
 3. builds the self-contained Windows x86-64 plugin with that exact version;
 4. validates and smoke-tests the assembled package;
-5. creates an installable repository marketplace ZIP and SHA-256 checksum; and
-6. uploads them as GitHub Actions artifacts.
+5. creates the installation ZIP and a SHA-256 checksum. Windows users can compare
+   the result of `Get-FileHash` in PowerShell with `SHA256SUMS.txt` to check that
+   their downloaded ZIP matches the release file (see
+   [Verify a download on Windows 11](#verify-a-download-on-windows-11));
+6. uploads the output from each platform build separately; and
+7. gathers the ZIPs from successful builds into `release-assets-v<version>` and
+   creates one `SHA256SUMS.txt` with a checksum for every expected download.
 
 It currently does **not**:
 
@@ -100,11 +105,11 @@ project metadata. A deterministic conformance test rejects version drift.
 
 Examples:
 
-- stable release: `0.2.3`;
+- stable release: `0.2.4`;
 - prerelease: `0.3.0-beta.1`;
-- local iteration: `0.2.3+codex.<UTC timestamp>`.
+- local iteration: `0.2.4+codex.<UTC timestamp>`.
 
-The Git tag adds a `v`, for example `v0.2.3`; the plugin manifest does not.
+The Git tag adds a `v`, for example `v0.2.4`; the plugin manifest does not.
 
 Supply the complete version to `scripts/build-codex-plugin.ps1` during assembly.
 Never edit the generated manifest or recalculate provenance after the build. Any
@@ -302,7 +307,7 @@ After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.4
 ```
 
 Unlike the GitHub marketplace bundle, this archive places
@@ -524,10 +529,30 @@ and confirm that all steps pass. The workflow uploads a release candidate
 containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
 create a GitHub Release.
 
-Download and inspect the artifact. GitHub wraps downloaded Actions artifacts in
-an outer ZIP, so attach the inner marketplace bundle and its checksum—not that
-outer ZIP—to the GitHub Release. The bundle must include `INSTALL.md` and
-`VERSION.txt` and be suitable for clean-machine installation.
+Download and inspect `release-assets-v<version>`, the final saved output from
+GitHub Actions (called an artifact). GitHub wraps it in an outer ZIP. Extract that
+ZIP, then attach each platform ZIP inside it and the single `SHA256SUMS.txt` to the
+GitHub Release. This combined checksum file lets users check every download.
+Keep the separate checksum files from individual builds for local checks only;
+do not publish or combine those files yourself.
+
+The collection script, `scripts/collect_release_assets.py`, requires the release
+version and a list of expected platforms, supplied with `--target`. It stops if a
+ZIP is missing, duplicated, unexpected, invalid, or reached through a filesystem
+link. It also refuses to overwrite an existing output directory.
+
+When adding a platform:
+
+1. Add its build job to `collect-release-assets.needs`. This makes collection wait
+   for that build to succeed.
+2. Add its `--target` value to the collection command. For the macOS work in
+   PR #28, use the job `build-macos-aarch64` and `--target aarch64-darwin`.
+3. Keep `merge-multiple: false` when downloading build outputs. This keeps the
+   separate build checksum files from overwriting each other.
+
+Each extra platform adds a ZIP and a line to the final checksum file. Every
+installable bundle must include `INSTALL.md` and `VERSION.txt` and work on a
+clean machine.
 
 Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):
 
@@ -546,6 +571,28 @@ first-attempt uninstallation.
 
 Never move or recreate a published release tag. Correct a published release by
 publishing an appropriate new version.
+
+## Verify a Download on Windows 11
+
+Windows includes PowerShell, so you do not need to install another tool:
+
+1. Download the plugin ZIP and `SHA256SUMS.txt` from the same GitHub Release.
+2. Open the download folder in File Explorer. Right-click an empty area and
+   select **Open in Terminal**. Use a **Windows PowerShell** or **PowerShell** tab.
+3. Run the following command. Replace `your-plugin-file.zip` with the exact name
+   of the downloaded ZIP, keeping the quotation marks:
+
+   ```powershell
+   Get-FileHash -LiteralPath ".\your-plugin-file.zip" -Algorithm SHA256
+   ```
+
+4. Open `SHA256SUMS.txt` in Notepad and find the line with that ZIP's filename.
+5. Compare the checksum on that line with the value under **Hash** in PowerShell.
+   All characters must match; uppercase and lowercase letters count as the same.
+
+If the values match, the ZIP matches the published checksum. If they differ, do
+not install it. Download the files again from the same release and repeat the
+check. If they still differ, report the problem to the maintainer.
 
 ## Release Decision
 

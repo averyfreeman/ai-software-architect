@@ -114,7 +114,19 @@ dependency-free installation guide, creates the Windows x86-64 ZIP, and writes
 its SHA-256 checksum. It does not rebuild or revalidate the plugin runtime.
 
 Generated output is written under `dist/release/` and remains ignored by Git.
-Publish the ZIP and `SHA256SUMS.txt` as assets of the matching GitHub Release.
+The local `SHA256SUMS.txt` lets you check the ZIP from this build. To publish a
+release, download the final `release-assets-v<version>` output from GitHub Actions.
+It contains the ZIP for each supported platform and one combined `SHA256SUMS.txt`.
+Publish these ZIPs and the combined checksum file together.
+Windows users can follow
+[Verify a download on Windows 11](../docs/RELEASING.md#verify-a-download-on-windows-11)
+to compare the ZIP's checksum with `SHA256SUMS.txt` using PowerShell.
+
+The collection script, `collect_release_assets.py`, calculates a new checksum for
+each ZIP. It stops if an expected ZIP is missing or appears more than once. See
+[`docs/RELEASING.md`](../docs/RELEASING.md) for the full publication steps and how
+to add another platform.
+
 The versioned source inputs are:
 
 - `adapters/codex/templates/marketplace.json`;
@@ -128,7 +140,7 @@ not the local repository-marketplace wrapper. After building the exact version,
 run:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.4
 ```
 
 The script validates the assembled plugin and its provenance, preserves the

@@ -5,6 +5,31 @@ SPDX-License-Identifier: MIT
 
 # Changelog
 
+## [0.2.4] - Unreleased
+
+### Security
+
+- Fixed a security issue where a command meant to read project files could run
+  project code instead. Shell commands can now start only the reader included
+  with the plugin, using checked settings. Further file reads use the host's
+  file-reading tools.
+- Updated MCP to `1.30.0` and PyJWT to `2.15.0` to address all 14 open
+  Dependabot alerts, including critical and high-severity PyJWT vulnerabilities.
+
+### Changed
+
+- Clarified how to review and enable all five bundled hooks through Codex
+  Settings → Coding → Hooks or the yellow-dot Review hooks icon.
+- Updated pinned GitHub Actions: setup-uv `10.3.0`, upload-artifact `7.0.2`,
+  and CodeQL init/analyze `4.38.3`.
+- Set the plugin and included Python packages to version `0.2.4`.
+- Added a final build step that gathers the release ZIPs and creates one
+  `SHA256SUMS.txt` for all downloads. This file lets users check that their
+  downloads are complete and unchanged.
+- Added automated checks for the shared file reader, shell launcher, and checksum
+  collection on macOS and Linux. Building and testing an installable macOS
+  package still requires further work.
+
 ## [0.2.3] - 2026-08-30
 
 ### Fixed
