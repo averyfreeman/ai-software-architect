@@ -5,10 +5,38 @@ SPDX-License-Identifier: MIT
 
 # Maintainer Scripts
 
-These PowerShell scripts and cross-platform Python entry points make the documented
-Codex plugin build and release commands repeatable. Run them from the repository
-root. The PowerShell wrappers require Windows PowerShell 5.1 or later, `git`, and
-`uv`.
+These PowerShell scripts make the documented Codex plugin build and release
+commands repeatable. Run them from a PowerShell terminal in the repository root.
+They require Windows PowerShell 5.1 or later, `git`, and `uv`.
+
+## Automated Tests on Windows, macOS, and Linux
+
+The Python tests use the same locked environment on all three systems. These
+commands do not require PowerShell:
+
+```sh
+uv sync --locked --all-packages
+uv run pytest -q
+```
+
+Tests that require Windows carry the `windows` marker. The root `conftest.py`
+automatically skips them on other systems, with a visible reason. Installing
+PowerShell on macOS or Linux does not cause Windows-only tests to run.
+Missing prerequisites must be reported as a skip, never as a passing test that
+returned without doing its checks.
+
+To select the same groups used by CI:
+
+```sh
+uv run pytest -q -m "not windows"
+uv run pytest -q -m windows
+```
+
+CI runs all shared tests on Windows, macOS, and Linux. A separate Windows job runs
+the Windows integration tests, builds the runtime, validates the package, and
+checks the real hook executable. Shared tests may inspect a Windows package made
+with placeholder files; that does not prove native installation or execution on
+macOS or Linux. Native packages still need their own platform release checks.
 
 ## PowerShell Execution Policy
 
@@ -49,6 +77,10 @@ ignored `.uv-cache/` directory. An explicitly configured cache is preserved.
 
 ## Build and Validate the Codex Plugin
 
+The PowerShell commands below retain the Windows flow. For macOS Apple Silicon,
+use the [native build and extraction procedure](../docs/RELEASING.md#macos-apple-silicon-build-and-validation).
+Both targets use the existing final release collector and one combined checksum file.
+
 Build a new self-contained runtime, assign an automatic cache-busted development
 version, validate the package, and smoke-test its short-lived hook runtime:
 
@@ -67,21 +99,6 @@ reuse the existing reviewed runtime:
 
 ```powershell
 .\scripts\build-codex-plugin.ps1 -ReuseRuntime
-```
-
-On macOS Apple Silicon, use the cross-platform Python entry points to build the
-native `aarch64-darwin` runtime and package layout:
-
-```sh
-uv run python adapters/codex/build_plugin.py \
-  --build-runtime \
-  --target aarch64-darwin \
-  --plugin-version 0.2.3
-uv run python adapters/codex/validate_plugin.py \
-  --target aarch64-darwin \
-  dist/codex/ai-software-architect
-uv run python adapters/codex/smoke_test_runtime.py \
-  dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
 ```
 
 Do not use `-ReuseRuntime` after runtime Python, shared domain code, schemas, dependencies,
@@ -124,29 +141,30 @@ dependencies:
 .\scripts\package-codex-release.ps1 -PluginVersion 0.1.0
 ```
 
-On macOS Apple Silicon, package the already validated native build with:
-
-```sh
-uv run python scripts/package_codex_release.py \
-  --target aarch64-darwin \
-  --plugin-version 0.2.3
-```
-
 The script checks that the assembled manifest version matches the requested
 version, copies the plugin into a release-only marketplace layout, adds the
-dependency-free installation guide, creates the target-specific ZIP, and writes
-its SHA-256 checksum. The Python entry point validates the target-specific plugin
-and writes deterministic archive metadata. Neither entry point rebuilds the runtime
-during packaging.
+dependency-free installation guide, creates the Windows x86-64 ZIP, and writes
+its SHA-256 checksum. It does not rebuild or revalidate the plugin runtime.
 
 Generated output is written under `dist/release/` and remains ignored by Git.
-Publish the ZIP and `SHA256SUMS.txt` as assets of the matching GitHub Release.
+The local `SHA256SUMS.txt` lets you check the ZIP from this build. To publish a
+release, download the final `release-assets-v<version>` output from GitHub Actions.
+It contains the ZIP for each supported platform and one combined `SHA256SUMS.txt`.
+Publish these ZIPs and the combined checksum file together.
+Windows users can follow
+[Verify a download on Windows 11](../docs/RELEASING.md#verify-a-download-on-windows-11)
+to compare the ZIP's checksum with `SHA256SUMS.txt` using PowerShell.
+
+The collection script, `collect_release_assets.py`, calculates a new checksum for
+each ZIP. It stops if an expected ZIP is missing or appears more than once. See
+[`docs/RELEASING.md`](../docs/RELEASING.md) for the full publication steps and how
+to add another platform.
+
 The versioned source inputs are:
 
 - `adapters/codex/templates/marketplace.json`;
 - `docs/INSTALL_CODEX_PLUGIN.md`; and
-- `scripts/package-codex-release.ps1`; and
-- `scripts/package_codex_release.py`.
+- `scripts/package-codex-release.ps1`.
 
 ## Package an OpenAI Plugin-Directory Submission
 
@@ -155,7 +173,7 @@ not the local repository-marketplace wrapper. After building the exact version,
 run:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.4
 ```
 
 The script validates the assembled plugin and its provenance, preserves the
@@ -199,8 +217,9 @@ smoke test:
 .\scripts\run-codex-plugin-invocation-smoke.ps1
 ```
 
-It renders `[@ai-software-architect](plugin://ai-software-architect@personal)`
-from typed activation fields and never appends its result to
+It renders the structured plugin mention using the detected marketplace identity
+(for example `personal` or `ai-software-architect-release`). It rejects duplicate
+enabled installations, checks the expected version, and never appends its result to
 `evaluation-data/exploratory-runs.jsonl`.
 
 Run the separate German-language campaign without changing the five-fixture English
@@ -258,7 +277,7 @@ comparison:
   -OutputDirectory .tmp\evaluations\release-candidate
 ```
 
-For a real run, the runner asks Codex for the installed and enabled personal
+For a real run, the runner asks Codex for the installed and enabled
 plugin version and records it automatically. `-ExpectedPluginVersion` is an
 optional release safety check: a mismatch stops the campaign before model calls.
 It never installs, disables, or switches plugin versions. The former

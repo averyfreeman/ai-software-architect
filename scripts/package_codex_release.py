@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import stat
 import sys
@@ -38,16 +39,12 @@ def _target_install_guide(target: RuntimeTarget, version: str) -> str:
     text = (ROOT / "docs" / "INSTALL_CODEX_PLUGIN.md").read_text(encoding="utf-8")
     text = text.replace("v0.1.0", f"v{version}")
     if target.name == "aarch64-darwin":
-        text = text.replace(
-            "On Windows:\n\n"
-            "```powershell\n"
-            f"Get-FileHash .\\ai-software-architect-v{version}-windows-x86_64.zip "
-            "-Algorithm SHA256\n"
-            "```\n\n",
-            "",
-        )
-    text = text.replace("windows-x86_64", target.archive_suffix)
-    return text
+        text = re.sub(r"### Windows\n.*?(?=### macOS)", "", text, flags=re.DOTALL)
+    text = text.replace("<target>", target.name)
+    text = text.replace(
+        f" (`{target.name}` is `windows-x86_64` or `aarch64-darwin`)", "",
+    )
+    return f"Bundle target: `{target.name}`.\n\n" + text
 
 
 def _write_zip(source: Path, archive: Path) -> None:
@@ -63,7 +60,7 @@ def _write_zip(source: Path, archive: Path) -> None:
             info = ZipInfo(path.relative_to(source.parent).as_posix(), ZIP_EPOCH)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.create_system = 3
-            info.external_attr = (stat.S_IMODE(path.stat().st_mode) & 0xFFFF) << 16
+            info.external_attr = (stat.S_IFREG | stat.S_IMODE(path.stat().st_mode)) << 16
             handle.writestr(info, path.read_bytes())
 
 

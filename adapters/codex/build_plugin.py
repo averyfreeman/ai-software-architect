@@ -19,6 +19,7 @@ try:
         RUNTIME_DIRECTORY_NAME,
         RUNTIME_TARGETS,
         RuntimeTarget,
+        host_target,
         target_for_name,
     )
 except ModuleNotFoundError as exc:
@@ -28,6 +29,7 @@ except ModuleNotFoundError as exc:
         RUNTIME_DIRECTORY_NAME,
         RUNTIME_TARGETS,
         RuntimeTarget,
+        host_target,
         target_for_name,
     )
 
@@ -110,7 +112,17 @@ A plugin selection without a request is incomplete. This single public skill cho
 the smallest sufficient mode from the request: focused pattern help, option
 comparison, or the complete architecture lifecycle.
 Route a definition, implementation example, or named-pattern explanation to focused
-help without repository inspection, deterministic tools, or artifacts. Route an open choice among
+help without repository inspection, deterministic tools, or artifacts. In focused
+explanations and examples as well as comparisons, render the first linked pattern
+mention as `[Category] [Name](canonical public reference)` using the catalog category
+and canonical name. Valid labels are `[GoF]`, `[Architecture]`, `[Presentation]`,
+`[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, and
+`[No pattern]`. Use `[GoF]` only for GoF patterns; keep all other catalog categories.
+Explain creational, structural, or
+behavioral subgroups in prose without replacing that category. Keep labels outside
+code examples. A no-pattern recommendation needs no link.
+Related patterns introduced in the answer follow the same category-and-link rule.
+Route an open choice among
 architectures or patterns to option comparison. Route project analysis, approval,
 decision recording, coding handoff, and conformance review to the complete lifecycle.
 Architecture advice and repository inspection are read-only. The architect role never
@@ -166,7 +178,10 @@ under the evidence or alternatives sections.
 For generic architecture guidance, pattern explanations, or implementation examples,
 loading the exact routed bundled reference is a hard gate: do not answer from model
 memory, and disclose an unavailable reference instead of inventing an example.
-Reproduce the canonical example for a generic request and do not browse merely to
+Generic requests use only stored examples. "One or two" permits one; if an exact
+requested count exceeds the stored examples, state that limit. Do not invent a
+second example. Label an adaptation only when the user requests a domain-specific
+variant. Keep usage calls separate from the canonical snippet. Do not browse merely to
 discover or verify deterministic canonical links; use the bundled generated
 reference catalog and do not invoke deterministic tools for focused reference help.
 All five bundled Codex control-plane hooks must be activated before first use for
@@ -181,8 +196,14 @@ instead of claiming the same reliability guarantees.
 The installed Composite is already active when these instructions are present. Do
 not try to rediscover its `SKILL.md` with workspace tools and do not report the skill
 unavailable merely because its installation path is not exposed as a workspace file.
-For repository evidence in Codex, read only relevant workspace files with native
-file tools. Dependency and boundary observations are host-native static analysis;
+For repository evidence in Codex, use the exact static read request supplied by
+the control plane, or separately controlled native file tools. The trusted hook
+reads the files itself and returns evidence in the denial reason. Shell execution
+stays denied, including the snapshot request. Use returned evidence without
+retrying the shell call. Bundled references and workflow resources use the same
+read-request mechanism. Never substitute rg, Git, PowerShell reads, or project
+scripts. If evidence is incomplete, disclose the limits. Observations are
+host-native static analysis;
 disclose that dynamic imports, reflection, generated code, and omitted files were
 not deterministically verified. Inspect `.ai-architect/` through host-native
 read-only tools.
@@ -382,6 +403,8 @@ def _append_reference_catalog_to_comparison_bundle(
 
 
 def _build_runtime(target: RuntimeTarget) -> Path:
+    if host_target() != target:
+        raise ValueError(f"native build target {target.name} does not match this host")
     runtime_dist = BUILD / "runtime"
     runtime_work = BUILD / "pyinstaller"
     command = [

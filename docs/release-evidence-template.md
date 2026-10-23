@@ -21,7 +21,7 @@ local paths.
 | Codex version | `<version>` |
 | Installed plugin version | `<version detected by the evaluation runner>` |
 | Model and reasoning effort | `gpt-5.6-sol`, medium |
-| Operating system | Windows x86-64 and macOS Apple Silicon `<versions>` |
+| Operating system | Windows x86-64 `<version>` |
 | Evaluator | `<name>` |
 | Evaluation date | `<YYYY-MM-DD>` |
 
@@ -38,7 +38,6 @@ local paths.
 - [ ] release-candidate build
 - [ ] plugin validation
 - [ ] packaged runtime smoke test
-- [ ] native macOS Apple Silicon build, validation, and smoke test (when targeting both packages)
 
 Evidence or workflow URL: `<link or concise note>`
 
@@ -56,7 +55,7 @@ Evidence: `<link or concise note>`
 
 ## Gate C: Structured Plugin-Mention Smoke
 
-- exact structured mention: `[@ai-software-architect](plugin://ai-software-architect@personal)`
+- exact structured mention: record the rendered mention with the detected marketplace ID
 - result:
 - evidence path:
 - confirmed excluded from exploratory performance ledger: [ ]
@@ -109,7 +108,6 @@ Lifecycle evidence: `<process observations and concise result>`
 ## Gate F: Clean-Machine Acceptance
 
 - [ ] tested on clean Windows x86-64
-- [ ] tested on clean macOS Apple Silicon
 - [ ] Python and `uv` were not preinstalled requirements
 - [ ] no first-run dependency download occurred
 - [ ] main workflow succeeded

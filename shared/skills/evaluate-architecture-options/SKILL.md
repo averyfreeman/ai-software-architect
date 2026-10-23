@@ -80,24 +80,32 @@ Before sending the answer, perform the same deterministic rendering self-check u
 7. Keep alternative options separate from complementary supporting patterns. Do not compare an application architecture, a presentation pattern, and an object-design pattern as if they solve the same decision.
 8. Do not equate similarly named patterns across process or deployment boundaries.
 
+## Pattern names in all user-facing answers
+
+In explanations, examples, and comparisons, use the catalog category and name at the first linked mention: `[Category] [Name](canonical public reference)`. This includes related patterns introduced in the answer.
+
+Valid labels: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, and `[No pattern]`.
+
+Use `[GoF] Abstract Factory` only for this GoF pattern; other patterns keep their catalog categories. Explain GoF subgroups (creational, structural, behavioral) in prose. Keep labels outside code. `[No pattern]` needs no link; use categorized plain text if links cannot be rendered.
+
+Canonical links use `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/` plus the routed filename.
+
 ## User-facing comparison contract
 
 - Present alternatives before the recommendation. For every option show a `0–100` fit score, concise rationale, main benefit, main liability, and material assumption.
 - Describe the score as an ordinal fit score for this decision, not a probability or calibrated percentage. State the criteria used to score the options.
 - In the localized evidence-and-assumptions section, distinguish static source observations from assumptions and unverified possibilities. Do not present a runtime claim unless runtime behavior was legitimately observed within the authorized mode.
-- Prefix the first mention of every named option and supporting pattern with its category: `[GoF]`, `[Architecture]`, `[Presentation]`, `[Dependency]`, `[Data]`, `[Integration]`, `[Resilience]`, `[Modernization]`, or `[No pattern]`.
-- Link the first user-facing pattern name to its canonical public reference under `https://github.com/leomuf/ai-software-architect/blob/main/shared/skills/evaluate-architecture-options/references/`, using the routed reference filename. Use plain text if the host cannot render Markdown links.
 - For supporting patterns, add a one-line role explaining where each applies. Do not assign them competing fit scores unless they are genuine alternatives within the same decision.
 - Apply the same category-and-link rule when mentioning a canonical pattern only to discourage or defer it. Do not end a section with a bare list such as `Avoid Repository, Unit of Work, and MVC`; either render each named pattern with its category and canonical link or describe the rejected abstraction types generically without naming catalog entries.
 
 ## Implementation example requests
 
-- Treat loading the routed reference as a hard gate before answering a named-pattern explanation or implementation-example request. Do not answer from model memory. If the reference cannot be loaded, disclose that limitation instead of synthesizing an example.
-- When the user asks for a generic Python implementation example of a GoF pattern, load only that routed `gof-*.md` reference and reuse its `Python example` verbatim. Explain briefly how the example's participants map to the pattern.
-- In Codex, users invoke only `$ai-software-architect`. The Composite routes pattern explanations, implementation examples, and comparisons to this canonical module and uses its copied references without attempting sibling-skill activation.
-- Reproduce the canonical example when a generic example is sufficient. For a repository-specific request, adapt the example to the user's domain and clearly identify the adaptation instead of presenting the canonical snippet as project-ready code.
-- Do not load unrelated pattern files or synthesize additional variants unless the user asks for them or a materially different variant is necessary.
-- Construct canonical public links from the routed filenames below. Do not browse or search the public repository merely to verify those deterministic links.
+- Load the exact routed reference before an explanation or example. Do not answer from model memory; disclose an unavailable reference instead of inventing one.
+- For a generic Python implementation example of a GoF pattern, load only its `gof-*.md` reference and reuse its `Python example` verbatim. Explain the participants and keep usage calls separate.
+- Generic requests use only stored examples. "One or two" permits one. If an exact count exceeds the stored examples, state the limit; do not invent a second example.
+- Adapt an example only when the user requests a domain-specific variant, and label the adaptation.
+- The Codex Composite routes here without sibling-skill activation. Do not load unrelated references.
+- Do not browse or search merely to verify canonical links.
 - Generic pattern explanations, implementation examples, and architecture guidance use the routed skill reference directly and need no deterministic tool call.
 
 ## Direct reference routing

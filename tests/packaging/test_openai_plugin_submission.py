@@ -10,6 +10,7 @@ import subprocess
 import zipfile
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,7 +22,7 @@ PACKAGE_SCRIPT = ROOT / "scripts" / "package-openai-plugin-submission.ps1"
 def test_manifest_identifies_company_publisher_and_public_policies() -> None:
     manifest = json.loads(MANIFEST.read_text("utf-8"))
 
-    assert manifest["version"] == "0.2.3"
+    assert manifest["version"] == "0.2.4"
     assert manifest["author"]["name"] == (
         "AUTOSOFT Engineering (a brand of XAVIER MUFFATO LTDA)"
     )
@@ -45,7 +46,7 @@ def test_submission_listing_has_three_realistic_starter_prompts() -> None:
     assert listing["plugin"]["portal_submission_type"] == "Skills only"
     assert listing["plugin"]["category_preference"] == "Developer Tools"
     assert "initial_submission_release_notes" not in listing["plugin"]
-    assert "Update from version 0.2.2 to 0.2.3" in listing["plugin"][
+    assert "Update from version 0.2.3 to 0.2.4" in listing["plugin"][
         "update_release_notes"
     ]
     assert "more than 350 eligible exploratory observations" in (
@@ -78,17 +79,18 @@ def test_openai_package_script_preserves_plugin_root() -> None:
     assert "validate_plugin.py" in script
 
 
+@pytest.mark.windows
 def test_openai_package_has_windows_explorer_compatible_member_paths(
     tmp_path: Path,
 ) -> None:
     powershell = shutil.which("powershell") or shutil.which("pwsh")
-    if os.name != "nt" or powershell is None:
-        return
+    if powershell is None:
+        pytest.skip("PowerShell is required for the Windows submission-package integration test")
 
     plugin = tmp_path / "plugin"
     required_files = {
         ".codex-plugin/plugin.json": json.dumps(
-            {"name": "ai-software-architect", "version": "0.2.3"}
+            {"name": "ai-software-architect", "version": "0.2.4"}
         ),
         "skills/ai-software-architect/SKILL.md": "# Test skill\n",
         "hooks/hooks.json": "{}\n",
@@ -124,7 +126,7 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
             "-OutputDirectory",
             str(output),
             "-PluginVersion",
-            "0.2.3",
+            "0.2.4",
         ],
         cwd=ROOT,
         env=environment,
@@ -134,7 +136,7 @@ def test_openai_package_has_windows_explorer_compatible_member_paths(
     )
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
-    archive_path = output / "ai-software-architect-v0.2.3-openai-plugin.zip"
+    archive_path = output / "ai-software-architect-v0.2.4-openai-plugin.zip"
     with zipfile.ZipFile(archive_path) as archive:
         members = archive.namelist()
 

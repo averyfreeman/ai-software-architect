@@ -9,9 +9,60 @@ This is the canonical maintainer guide for preparing, validating, testing, and
 publishing the Codex plugin through GitHub. It documents the current repository
 behavior as well as the manual gates that remain necessary before a release.
 
-The supported packaged targets are Windows x86-64 and native macOS Apple Silicon
-(`aarch64-darwin`). Each target has its own runtime path, hook commands, archive,
-validation, and clean-machine acceptance procedure.
+Native build targets are Windows x86-64 and macOS Apple Silicon (`aarch64-darwin`).
+Each target requires its own native build and release evidence. Other operating-system
+packages and future coding-agent adapters remain separate work.
+
+CI runs the shared Python tests on Windows, macOS, and Linux with
+`uv run pytest -q -m "not windows"` and strict `uv run mypy`. A separate Windows job runs
+`uv run pytest -q -m windows` before building and checking the executable.
+For a local `uv run pytest -q`, platform detection automatically skips the marked
+Windows integration tests on macOS and Linux and reports the reason. Passing the
+shared tests does not validate a native package. The macOS job also builds, packages,
+extracts with `ditto`, validates, and smoke-tests the real Apple Silicon runtime.
+
+## macOS Apple Silicon Build and Validation
+
+Run on an Apple Silicon Mac with the locked developer environment. End users do
+not need Python or `uv`. Use the exact candidate version from the plugin manifest
+(or an explicit development version); do not edit generated files after assembly.
+
+```sh
+uv sync --locked --all-packages
+uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py
+uv run mypy
+uv run pytest -q
+uv run python tools/generate_third_party_notices.py
+version=$(uv run python -c 'import json; print(json.load(open("adapters/codex/templates/plugin.json"))["version"])')
+uv run python adapters/codex/build_plugin.py --build-runtime --target aarch64-darwin --plugin-version "$version"
+uv run python adapters/codex/validate_plugin.py --target aarch64-darwin dist/codex/ai-software-architect
+uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
+uv run python scripts/package_codex_release.py --target aarch64-darwin --plugin-version "$version"
+archive="dist/release/ai-software-architect-v$version-aarch64-darwin.zip"
+extracted=$(mktemp -d)
+ditto -x -k "$archive" "$extracted"
+plugin="$extracted/ai-software-architect-v$version-aarch64-darwin/plugins/ai-software-architect"
+uv run python adapters/codex/validate_plugin.py --target aarch64-darwin "$plugin"
+uv run python adapters/codex/smoke_test_runtime.py "$plugin/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime"
+```
+
+Do not repair permissions between extraction and validation. The ZIP records regular
+file type and Unix mode so the documented macOS extractor preserves executable bits.
+Third-party notices are generated for each build host; keep the checked-in Windows
+inventory intact when preparing a macOS-only build. The runtime build is native,
+not a cross-compiler; unsupported hosts and mismatched targets are rejected.
+
+For publication, collect both successful platform artifacts with the existing
+`scripts/collect_release_assets.py`, passing `--target windows-x86_64` and
+`--target aarch64-darwin`. Publish the two inner ZIPs and the single combined
+`SHA256SUMS.txt` from `release-assets-v<version>`; job-local checksum files are
+not the publication manifest.
+
+Before advertising the macOS release, complete the existing manual Desktop and
+clean-machine gates: install the extracted candidate, enable all five hooks,
+exercise the main workflow, and uninstall. A developer Mac with `PATH` restricted
+to system tools verifies runtime independence but is not a clean-machine or
+Desktop UI acceptance result. Record any pending gates explicitly.
 
 ## PowerShell Execution Policy
 
@@ -63,12 +114,17 @@ It currently:
 
 1. starts automatically when a tag matching `v*` is pushed;
 2. derives the plugin version from that tag;
-3. builds the self-contained Windows x86-64 and macOS Apple Silicon plugins with
-   that exact version;
-4. validates and smoke-tests both assembled packages;
-5. creates a target-specific installable repository marketplace ZIP and SHA-256
-   checksum for each package; and
-6. uploads both artifacts as GitHub Actions artifacts.
+3. builds separate self-contained Windows x86-64 and macOS Apple Silicon plugins
+   with that exact version;
+4. validates and smoke-tests each assembled package, and repeats those checks
+   against the extracted macOS release ZIP;
+5. creates the installation ZIP and a SHA-256 checksum. Windows users can compare
+   the result of `Get-FileHash` in PowerShell with `SHA256SUMS.txt` to check that
+   their downloaded ZIP matches the release file (see
+   [Verify a download on Windows 11](#verify-a-download-on-windows-11));
+6. uploads the output from each platform build separately; and
+7. gathers the ZIPs from successful builds into `release-assets-v<version>` and
+   creates one `SHA256SUMS.txt` with a checksum for every expected download.
 
 It currently does **not**:
 
@@ -103,11 +159,11 @@ project metadata. A deterministic conformance test rejects version drift.
 
 Examples:
 
-- stable release: `0.2.3`;
+- stable release: `0.2.4`;
 - prerelease: `0.3.0-beta.1`;
-- local iteration: `0.2.3+codex.<UTC timestamp>`.
+- local iteration: `0.2.4+codex.<UTC timestamp>`.
 
-The Git tag adds a `v`, for example `v0.2.3`; the plugin manifest does not.
+The Git tag adds a `v`, for example `v0.2.4`; the plugin manifest does not.
 
 Supply the complete version to `scripts/build-codex-plugin.ps1` during assembly.
 Never edit the generated manifest or recalculate provenance after the build. Any
@@ -305,7 +361,7 @@ After the exact plugin is built and validated, create the separate OpenAI
 plugin-directory archive:
 
 ```powershell
-.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.3
+.\scripts\package-openai-plugin-submission.ps1 -PluginVersion 0.2.4
 ```
 
 Unlike the GitHub marketplace bundle, this archive places
@@ -349,20 +405,6 @@ Run from a clean candidate commit:
 .\scripts\run-release-candidate-gates.ps1 -PluginVersion 0.1.0-beta.1
 ```
 
-For the native macOS Apple Silicon package, run the equivalent target-specific
-checks from a clean candidate tree:
-
-```sh
-uv run python adapters/codex/build_plugin.py --build-runtime \
-  --target aarch64-darwin --plugin-version 0.1.0-beta.1
-uv run python adapters/codex/validate_plugin.py --target aarch64-darwin \
-  dist/codex/ai-software-architect
-uv run python adapters/codex/smoke_test_runtime.py \
-  dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
-uv run python scripts/package_codex_release.py --target aarch64-darwin \
-  --plugin-version 0.1.0-beta.1
-```
-
 The script verifies that the candidate tree is clean, checks and synchronizes the
 lockfile, regenerates and compares derived artifacts, runs linting, type checks,
 and tests, performs a full build, package validation, and runtime smoke test,
@@ -394,13 +436,17 @@ After installing the exact candidate and activating all five reviewed hooks, run
   -ReasoningEffort medium
 ```
 
-This small release gate uses typed activation data to render the exact structured
-mention `[@ai-software-architect](plugin://ai-software-architect@personal)`.
-It verifies that the installed plugin enters the Composite workflow without
-repository changes. Its result is reported separately and is never added to the
-five-fixture exploratory cohort or `evaluation-data/exploratory-runs.jsonl`. Because
-the exact mention targets `@personal`, the runner fails before model use unless the
-one enabled candidate is the personal-marketplace installation prepared above.
+This small release gate renders a structured mention for the one installed and
+enabled plugin. It uses the detected marketplace name, such as `personal` or
+`ai-software-architect-release`, and still checks the expected version. Multiple
+enabled installations are rejected. The report records the installation identity
+and provenance. The gate checks activation without repository changes. Its result
+stays separate from the five-fixture campaign and its performance ledger.
+
+After hook changes, test a newly built and installed candidate. A passing simulated
+hook event does not prove that the real Codex client delivers the evidence to the
+model. Check that a static read returns evidence even though shell execution is
+denied, and that clarification and decision continuations keep the same controls.
 
 ### Gate D: Five Exploratory Fixtures
 
@@ -494,8 +540,7 @@ blocked; the Codex package is already designed without persistent MCP registrati
 
 ### Gate F: Clean-Machine Acceptance
 
-On clean Windows x86-64 and macOS Apple Silicon environments without Python,
-`uv`, or development caches:
+On a clean Windows x86-64 environment without Python, `uv`, or development caches:
 
 1. install the exact package;
 2. activate all five reviewed hooks;
@@ -542,10 +587,30 @@ and confirm that all steps pass. The workflow uploads a release candidate
 containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
 create a GitHub Release.
 
-Download and inspect the artifact. GitHub wraps downloaded Actions artifacts in
-an outer ZIP, so attach the inner marketplace bundle and its checksum—not that
-outer ZIP—to the GitHub Release. The bundle must include `INSTALL.md` and
-`VERSION.txt` and be suitable for clean-machine installation.
+Download and inspect `release-assets-v<version>`, the final saved output from
+GitHub Actions (called an artifact). GitHub wraps it in an outer ZIP. Extract that
+ZIP, then attach each platform ZIP inside it and the single `SHA256SUMS.txt` to the
+GitHub Release. This combined checksum file lets users check every download.
+Keep the separate checksum files from individual builds for local checks only;
+do not publish or combine those files yourself.
+
+The collection script, `scripts/collect_release_assets.py`, requires the release
+version and a list of expected platforms, supplied with `--target`. It stops if a
+ZIP is missing, duplicated, unexpected, invalid, or reached through a filesystem
+link. It also refuses to overwrite an existing output directory.
+
+When adding a platform:
+
+1. Add its build job to `collect-release-assets.needs`. This makes collection wait
+   for that build to succeed.
+2. Add its `--target` value to the collection command. For the macOS work in
+   PR #28, use the job `build-macos-aarch64` and `--target aarch64-darwin`.
+3. Keep `merge-multiple: false` when downloading build outputs. This keeps the
+   separate build checksum files from overwriting each other.
+
+Each extra platform adds a ZIP and a line to the final checksum file. Every
+installable bundle must include `INSTALL.md` and `VERSION.txt` and work on a
+clean machine.
 
 Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):
 
@@ -557,13 +622,35 @@ Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-archit
 5. verify all assets and checksums, then publish the draft.
 
 Do not attach development caches, credentials, local paths, hidden reasoning, or
-sensitive evidence. After publishing, download each target archive as an independent
-user, verify its checksum, install it in the corresponding clean supported
-environment, review and activate all five hooks, test structured `@` invocation,
-and confirm first-attempt uninstallation.
+sensitive evidence. After publishing, download the release as an independent
+user, verify its checksum, install it in a clean supported Windows environment,
+review and activate all five hooks, test structured `@` invocation, and confirm
+first-attempt uninstallation.
 
 Never move or recreate a published release tag. Correct a published release by
 publishing an appropriate new version.
+
+## Verify a Download on Windows 11
+
+Windows includes PowerShell, so you do not need to install another tool:
+
+1. Download the plugin ZIP and `SHA256SUMS.txt` from the same GitHub Release.
+2. Open the download folder in File Explorer. Right-click an empty area and
+   select **Open in Terminal**. Use a **Windows PowerShell** or **PowerShell** tab.
+3. Run the following command. Replace `your-plugin-file.zip` with the exact name
+   of the downloaded ZIP, keeping the quotation marks:
+
+   ```powershell
+   Get-FileHash -LiteralPath ".\your-plugin-file.zip" -Algorithm SHA256
+   ```
+
+4. Open `SHA256SUMS.txt` in Notepad and find the line with that ZIP's filename.
+5. Compare the checksum on that line with the value under **Hash** in PowerShell.
+   All characters must match; uppercase and lowercase letters count as the same.
+
+If the values match, the ZIP matches the published checksum. If they differ, do
+not install it. Download the files again from the same release and repeat the
+check. If they still differ, report the problem to the maintainer.
 
 ## Release Decision
 

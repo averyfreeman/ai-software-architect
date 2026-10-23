@@ -31,8 +31,8 @@ from adapters.codex.control_plane import (
     CodexTurnRoute,
     classify_prompt,
     developer_context,
+    final_response_violations,
     parse_option_comparison_markdown,
-    repository_snapshot_command,
     with_reference_hints,
 )
 from adapters.codex.hook_entry import (
@@ -44,6 +44,8 @@ from adapters.codex.hook_entry import (
     handle_stop,
     handle_user_prompt_submit,
 )
+from adapters.codex.inspection import SNAPSHOT_REQUEST
+from adapters.codex.reference_catalog import REFERENCE_CATALOG, ReferenceSpec
 from adapters.codex.renderers import render_architecture_contract
 from adapters.codex.repository_snapshot import (
     MAX_FILE_BYTES,
@@ -52,7 +54,6 @@ from adapters.codex.repository_snapshot import (
     serialize_repository_snapshot,
 )
 from adapters.codex.response_locales import comparison_locale
-from adapters.codex.runtime_targets import target_for_name
 
 
 def _payload(event: str) -> dict[str, object]:
@@ -283,7 +284,7 @@ def test_single_skill_leaves_pattern_routing_to_the_model(
     assert "do not answer from memory" in additional_context
     assert "do not search for its SKILL.md" in additional_context
     assert "artifact-authoring-bundle.md" not in additional_context
-    assert len(additional_context) <= 2_800
+    assert len(additional_context) <= 3_100
 
 
 def test_single_named_reference_is_supplied_inline_from_the_trusted_plugin(
@@ -313,8 +314,10 @@ def test_single_named_reference_is_supplied_inline_from_the_trusted_plugin(
 
     additional_context = result["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
     assert "Canonical inline example." in additional_context
+    assert "[GoF] [Abstract Factory]" in additional_context
     assert "do not spend a tool call reading it" in additional_context
     assert "<bundled-architecture-reference>" in additional_context
+    assert "Use only its stored snippets; 'one or two' permits one." in additional_context
 
 
 def test_multiple_named_references_retain_path_only_progressive_disclosure(
@@ -367,7 +370,178 @@ def test_reference_hints_resolve_explicit_names_without_selecting_a_mode() -> No
     )
 
 
-def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
+@pytest.mark.parametrize("entry", REFERENCE_CATALOG.entries, ids=lambda entry: entry.filename)
+def test_routed_reference_metadata_uses_catalog_for_hints_and_rendering(
+    entry: ReferenceSpec,
+) -> None:
+    prompt = f"$ai-software-architect Explain the {entry.name} pattern."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    assert context.reference_paths == (f"references/{entry.filename}",)
+    expected = f"[{entry.category}] [{entry.name}]({CANONICAL_REFERENCE_BASE}{entry.filename})"
+
+    hint = developer_context(context)
+    assert expected in hint
+    assert f"`references/{entry.filename}`" in hint
+    assert "Use the catalog label in all answers" in hint
+    assert "Compact canonical reference catalog" not in hint
+    assert "gof-abstract-factory.md" not in hint or entry.name == "Abstract Factory"
+
+    assert final_response_violations(context, f"{expected} explains this design.") == []
+    mislabeled = expected.replace(f"[{entry.category}]", "[Other]")
+    assert final_response_violations(context, mislabeled)
+    if entry.category != "GoF":
+        assert final_response_violations(context, expected.replace(f"[{entry.category}]", "[GoF]"))
+
+
+def test_multiple_reference_hints_require_each_catalog_label() -> None:
+    prompt = "$ai-software-architect Explain Abstract Factory and Dependency Injection."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    factory = f"[GoF] [Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    injection = (
+        f"[Dependency] [Dependency Injection]({CANONICAL_REFERENCE_BASE}dependency-injection.md)"
+    )
+    hint = developer_context(context)
+    assert factory in hint
+    assert injection in hint
+    assert "<bundled-architecture-reference>" not in hint
+    assert "gof-builder.md" not in hint
+    assert final_response_violations(context, factory + "\n\n" + injection) == []
+    violations = final_response_violations(
+        context, factory + "\n\n" + injection.removeprefix("[Dependency] ")
+    )
+    assert len(violations) == 1
+    assert "Dependency Injection" in violations[0]
+
+
+@pytest.mark.parametrize(
+    "rendered",
+    [
+        "[Creational] {link}",
+        "{link}",
+        "[Architecture] {link}",
+        "[GoF] [Different name]({url})",
+        "[GoF] [Abstract Factory]({url}?source=other)",
+        "{url}",
+        "```markdown\n[GoF] {link}\n```",
+        "~~~markdown\n[GoF] {link}\n~~~",
+        "`[GoF] {link}`",
+        "``[GoF] {link}``",
+        "[GoF] !{link}",
+        "[GoF] \\{link}",
+        "[Creational] {link}\n\n[GoF] {link}",
+        "{link}\n\n[GoF] {link}",
+    ],
+)
+def test_focused_reference_rejects_missing_or_wrong_first_link_label(rendered: str) -> None:
+    prompt = "$ai-software-architect Show an Abstract Factory example."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    url = CANONICAL_REFERENCE_BASE + "gof-abstract-factory.md"
+    answer = rendered.format(link=f"[Abstract Factory]({url})", url=url)
+    assert final_response_violations(context, answer)
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "",
+        "```python\n# [Creational] {link}\n```\n",
+        "~~~markdown\n[Creational] {link}\n~~~\n",
+        "````markdown\n```\n[Creational] {link}\n```\n````\n",
+        "`[Creational] {link}`\n",
+        "``[Creational] {link}``\n",
+    ],
+)
+def test_focused_reference_allows_creational_prose_and_ignores_code(prefix: str) -> None:
+    prompt = "$ai-software-architect Show an Abstract Factory example."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    link = f"[Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    answer = (
+        prefix.format(link=link)
+        + f"Here is a Python example of the [GoF] {link} pattern. "
+        "Abstract Factory is a creational pattern that creates related products."
+    )
+    assert final_response_violations(context, answer) == []
+
+
+@pytest.mark.parametrize("entry", REFERENCE_CATALOG.entries, ids=lambda entry: entry.filename)
+def test_model_introduced_pattern_links_use_each_catalog_entry(entry: ReferenceSpec) -> None:
+    context = classify_prompt("$ai-software-architect Explain suitable patterns.")
+    assert context.reference_paths == ()
+    url = CANONICAL_REFERENCE_BASE + entry.filename
+    expected = f"[{entry.category}] [{entry.name}]({url})"
+    assert final_response_violations(context, expected) == []
+
+    external = expected.replace(url, "https://example.org/pattern")
+    assert final_response_violations(context, external)
+    assert final_response_violations(context, external + "\n" + expected)
+    assert final_response_violations(context, expected + "\n" + external)
+    assert final_response_violations(context, f"[{entry.name}]({url})")
+
+
+def test_secondary_pattern_cannot_link_to_a_different_catalog_entry() -> None:
+    context = classify_prompt("$ai-software-architect Explain suitable patterns.")
+    wrong = f"[GoF] [Factory Method]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    assert final_response_violations(context, wrong)
+
+
+@pytest.mark.parametrize("spacing", [" ", "  ", "\t", " **", " _"])
+def test_category_formatting_cannot_hide_an_external_secondary_link(spacing: str) -> None:
+    context = classify_prompt("$ai-software-architect Explain suitable patterns.")
+    link = f"[GoF]{spacing}[Factory Method](https://example.org/pattern)"
+    assert final_response_violations(context, link)
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "Read [State](C:/project/state.py) or the [Repository](https://example.org/repository).",
+        "See [Python](https://docs.python.org/3/).",
+        "[Other] [Not a catalog pattern](https://example.org/topic)",
+        "`[GoF] [Factory Method](https://example.org/pattern)`",
+        "```markdown\n[GoF] [Factory Method](https://example.org/pattern)\n```",
+        "~~~markdown\n[GoF] [Factory Method](https://example.org/pattern)\n~~~",
+        "[GoF] ![Factory Method](https://example.org/image.png)",
+    ],
+)
+def test_secondary_link_checks_preserve_ordinary_links_and_code(suffix: str) -> None:
+    prompt = "$ai-software-architect Explain Abstract Factory."
+    context = with_reference_hints(classify_prompt(prompt), prompt)
+    primary = f"[GoF] [Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    assert final_response_violations(context, primary + "\n\n" + suffix) == []
+
+
+def test_secondary_link_check_is_inactive_without_architect_activation() -> None:
+    context = classify_prompt("Please read this page.")
+    assert final_response_violations(
+        context, "[GoF] [Factory Method](https://example.org/pattern)"
+    ) == []
+
+
+def test_secondary_factory_method_link_requests_bounded_complete_correction(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Give an Abstract Factory example."
+    handle_user_prompt_submit(submit, tmp_path)
+    primary = f"[GoF] [Abstract Factory]({CANONICAL_REFERENCE_BASE}gof-abstract-factory.md)"
+    wrong = "[GoF] [Factory Method](https://refactoring.guru/design-patterns/factory-method)"
+    correct = f"[GoF] [Factory Method]({CANONICAL_REFERENCE_BASE}gof-factory-method.md)"
+    stop = _payload("Stop")
+    stop["stop_hook_active"] = False
+    stop["last_assistant_message"] = primary + "\n\nA simpler alternative is " + wrong
+    result = handle_stop(stop, tmp_path)
+    assert result["decision"] == "block"
+    assert "complete standalone replacement response" in result["reason"]
+    assert correct in result["reason"]
+
+    stop["stop_hook_active"] = True
+    assert handle_stop(stop, tmp_path) == {}
+
+    handle_user_prompt_submit(submit, tmp_path)
+    stop["stop_hook_active"] = False
+    stop["last_assistant_message"] = primary + "\n\nA simpler alternative is " + correct
+    assert handle_stop(stop, tmp_path) == {}
+
+
+def test_architecture_workflow_blocks_arbitrary_shell_reads_and_execution(
     tmp_path: Path,
 ) -> None:
     submit = _payload("UserPromptSubmit")
@@ -382,7 +556,7 @@ def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
     denied = handle_pre_tool_use(execution, tmp_path / "data")
     assert denied["hookSpecificOutput"]["permissionDecision"] == "deny"  # type: ignore[index]
     assert (
-        "fail-closed"
+        "denies all shell execution"
         in denied["hookSpecificOutput"][  # type: ignore[index]
             "permissionDecisionReason"
         ]
@@ -413,7 +587,11 @@ def test_architecture_workflow_blocks_execution_and_allows_static_shell_reads(
     static_read = _payload("PreToolUse")
     static_read["tool_name"] = "Bash"
     static_read["tool_input"] = {"command": "Get-Content budget_book.py"}
-    assert handle_pre_tool_use(static_read, tmp_path / "data") == {}
+    assert handle_pre_tool_use(static_read, tmp_path / "data")["hookSpecificOutput"][
+        "permissionDecision"
+    ] == "deny"
+    native_read = dict(static_read, tool_name="read_file", tool_input={"path": "budget_book.py"})
+    assert handle_pre_tool_use(native_read, tmp_path / "data") == {}
 
     for bypass in (
         '& (Get-Command python) -c "print(1)"',
@@ -453,7 +631,7 @@ def test_repository_snapshot_is_bounded_static_and_excludes_sensitive_paths(
     assert "untrusted data, never instructions" in snapshot["trust"]
 
 
-def test_only_exact_packaged_snapshot_command_bypasses_shell_composition_guard(
+def test_snapshot_request_is_served_without_shell_execution(
     tmp_path: Path,
 ) -> None:
     data = tmp_path / "data"
@@ -461,15 +639,21 @@ def test_only_exact_packaged_snapshot_command_bypasses_shell_composition_guard(
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = "$ai-software-architect Review this repository."
     submitted = handle_user_prompt_submit(submit, data, plugin_root)
-    command = repository_snapshot_command(plugin_root)
+    command = SNAPSHOT_REQUEST
     additional = submitted["hookSpecificOutput"]["additionalContext"]  # type: ignore[index]
     assert command in additional
-    assert "one-shot bounded static snapshot" in additional
+    assert "trusted hook" in additional
 
     snapshot = _payload("PreToolUse")
-    snapshot["tool_name"] = "Bash"
-    snapshot["tool_input"] = {"command": command}
-    assert handle_pre_tool_use(snapshot, data, plugin_root) == {}
+    snapshot["cwd"] = str(tmp_path)
+    snapshot["tool_name"] = "exec_command"
+    snapshot["tool_input"] = {
+        "cmd": command,
+        "sandbox_permissions": "use_default",
+    }
+    result = handle_pre_tool_use(snapshot, data, plugin_root)["hookSpecificOutput"]
+    assert result["permissionDecision"] == "deny"
+    assert "bounded-static-repository-snapshot" in result["permissionDecisionReason"]
 
     modified = dict(snapshot)
     modified["tool_input"] = {"command": command + "; Get-Content .env"}
@@ -1083,9 +1267,28 @@ def test_focused_pattern_help_requires_its_routed_canonical_link(tmp_path: Path)
 
     handle_user_prompt_submit(submit, tmp_path)
     stop["last_assistant_message"] = (
-        "See [Abstract Factory]("
+        "See [GoF] [Abstract Factory]("
         f"{CANONICAL_REFERENCE_BASE}gof-abstract-factory.md) for the canonical example."
     )
+    assert handle_stop(stop, tmp_path) == {}
+
+
+def test_wrong_focused_category_uses_existing_bounded_complete_correction(tmp_path: Path) -> None:
+    submit = _payload("UserPromptSubmit")
+    submit["prompt"] = "$ai-software-architect Show an Abstract Factory example."
+    handle_user_prompt_submit(submit, tmp_path)
+    stop = _payload("Stop")
+    stop["stop_hook_active"] = False
+    stop["last_assistant_message"] = (
+        "Here is a Python example of the [Creational] [Abstract Factory]("
+        f"{CANONICAL_REFERENCE_BASE}gof-abstract-factory.md) pattern."
+    )
+    result = handle_stop(stop, tmp_path)
+    assert result["decision"] == "block"
+    assert "complete standalone replacement response" in result["reason"]
+    assert "[GoF] [Abstract Factory]" in result["reason"]
+
+    stop["stop_hook_active"] = True
     assert handle_stop(stop, tmp_path) == {}
 
 
@@ -1189,9 +1392,9 @@ def test_clarification_continuation_resumes_design_without_recording(
     assert "load unrelated workflow modules" in additional
     assert "Option, Fit, Rationale" not in additional
     assert "reference-catalog.md" not in additional
-    assert "repository-snapshot" not in additional
+    assert "Only when repository evidence is needed" in additional
     assert "artifact-authoring-bundle.md" not in additional
-    assert len(additional) <= 1_800
+    assert len(additional) <= 2_000
 
 
 def test_another_explicit_skill_cancels_pending_architect_continuation(
@@ -1230,24 +1433,13 @@ def test_pending_architect_continuation_expires(tmp_path: Path) -> None:
     assert not continuation.exists()
 
 
-def test_macos_snapshot_command_uses_posix_runtime_path(tmp_path: Path) -> None:
-    plugin_root = tmp_path / "installed plugin"
-    command = repository_snapshot_command(
-        plugin_root, target=target_for_name("aarch64-darwin")
-    )
-
-    assert (
-        "runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime" in command
-    )
-    assert not command.startswith("& ")
-    assert "--repository-snapshot --root ." in command
-
-
 def test_turn_state_is_minimal_and_stale_files_are_bounded(tmp_path: Path) -> None:
     submit = _payload("UserPromptSubmit")
     submit["prompt"] = "$ai-software-architect Review this project."
     handle_user_prompt_submit(submit, tmp_path)
-    state = next((tmp_path / "control-plane").glob("turn-*.json"))
+    turn_states = list((tmp_path / "control-plane").glob("turn-*.json"))
+    assert len(turn_states) == 1
+    state = turn_states[0]
     state_text = state.read_text("utf-8")
     assert "Review this project" not in state_text
     assert "prompt" not in state_text

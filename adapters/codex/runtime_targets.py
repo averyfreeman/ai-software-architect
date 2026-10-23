@@ -5,9 +5,7 @@
 
 from __future__ import annotations
 
-import os
 import platform
-import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,12 +47,6 @@ class RuntimeTarget:
             f"--codex-hook --event {event}"
         )
 
-    def snapshot_command(self, plugin_root: Path) -> str:
-        executable = plugin_root.resolve(strict=False) / self.executable_relative_path
-        if self.name == "windows-x86_64":
-            return f'& "{executable}" --repository-snapshot --root .'
-        return f'{shlex.quote(str(executable))} --repository-snapshot --root .'
-
 
 RUNTIME_TARGETS: dict[str, RuntimeTarget] = {
     "windows-x86_64": RuntimeTarget(
@@ -84,9 +76,9 @@ def host_target() -> RuntimeTarget:
     machine = platform.machine().casefold()
     if sys.platform == "darwin" and machine in {"arm64", "aarch64"}:
         return RUNTIME_TARGETS["aarch64-darwin"]
-    if os.name == "nt" and machine in {"amd64", "x86_64"}:
+    if sys.platform == "win32" and machine in {"amd64", "x86_64"}:
         return RUNTIME_TARGETS["windows-x86_64"]
-    return RUNTIME_TARGETS["windows-x86_64"]
+    raise ValueError(f"unsupported native build host: {sys.platform}/{machine}")
 
 
 def detect_packaged_target(plugin_root: Path) -> RuntimeTarget:

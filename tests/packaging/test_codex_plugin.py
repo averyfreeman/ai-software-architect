@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
+import pytest
 import yaml
 from pytest import MonkeyPatch, raises
 
 from adapters.codex import build_plugin, validate_plugin
+from adapters.codex.reference_catalog import REFERENCE_CATALOG
 from adapters.codex.runtime_targets import target_for_name
 
 
@@ -47,12 +50,15 @@ def test_codex_plugin_is_reproducible_and_complete(
     assert all("plugin://ai-software-architect" not in prompt for prompt in default_prompts)
     assert "Suggest suitable design patterns for my current project." in default_prompts
     warning = (
-        "⚠️ IMPORTANT: BEFORE FIRST USE, ACTIVATE ALL FIVE BUNDLED HOOKS IN THE "
-        "HOOKS SECTION BELOW."
+        "⚠️ IMPORTANT: BEFORE FIRST USE, REVIEW AND ENABLE ALL FIVE BUNDLED HOOKS."
     )
     hook_explanation = (
         "All five are required for reliable routing, continuation, safety checks, "
-        "artifact validation, and complete responses."
+        "artifact validation, and complete responses. "
+        "In Codex, go to Settings → Coding → Hooks to review and approve all five "
+        "AI Software Architect hooks. Alternatively, click the hook icon with the "
+        "yellow dot below the message input (“Review hooks”) to review and approve "
+        "pending hooks."
     )
     assert manifest["interface"]["longDescription"].endswith(
         f"\n\n{warning} {hook_explanation}"
@@ -74,6 +80,12 @@ def test_codex_plugin_is_reproducible_and_complete(
     )
     assert "Return only user-facing Markdown" in skill_text
     assert "Every recommendation ends with" in skill_text
+    assert "In focused\nexplanations and examples as well as comparisons" in skill_text
+    assert "Explain creational, structural, or\nbehavioral subgroups in prose" in skill_text
+    assert 'Generic requests use only stored examples. "One or two" permits one' in skill_text
+    categories = {entry.category for entry in REFERENCE_CATALOG.entries} | {"No pattern"}
+    for category in categories:
+        assert f"`[{category}]`" in skill_text
     for marker in (
         "ai-architect-outcome:",
         "ai-architect-decision-shape:",
@@ -97,6 +109,14 @@ def test_codex_plugin_is_reproducible_and_complete(
             assert "Codex progressive-disclosure boundary" in workflow_text
             assert "Load at most one focused reference" in workflow_text
             assert "## Compact canonical reference catalog" in workflow_text
+            assert "## Pattern names in all user-facing answers" in workflow_text
+            assert "Use `[GoF] Abstract Factory`" in workflow_text
+            assert (
+                'Generic requests use only stored examples. "One or two" permits one'
+                in workflow_text
+            )
+            for category in categories:
+                assert f"`[{category}]`" in workflow_text
             assert "| GoF | Strategy | `gof-strategy.md` |" in workflow_text
             assert build_plugin.CANONICAL_REFERENCE_BASE in workflow_text
             assert "Bundled path rule: `references/<File>`" in workflow_text
@@ -188,6 +208,7 @@ def test_codex_plugin_is_reproducible_and_complete(
         validate_plugin.validate(versioned)
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="requires macOS executable permissions")
 def test_codex_plugin_assembles_native_macos_runtime(
     tmp_path: Path, monkeypatch: MonkeyPatch
 ) -> None:
@@ -219,3 +240,9 @@ def test_codex_plugin_assembles_native_macos_runtime(
                 assert "commandWindows" not in hook
 
     validate_plugin.validate(assembled, target=target)
+
+    with raises(ValueError, match="does not match"):
+        validate_plugin.validate(assembled, target=target_for_name("windows-x86_64"))
+    packaged_executable.chmod(0o644)
+    with raises(ValueError, match="not user-executable"):
+        validate_plugin.validate(assembled, target=target)

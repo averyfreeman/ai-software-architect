@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -54,8 +55,6 @@ def test_install_guide_requires_no_development_runtime() -> None:
     assert "selecting\n**AI Software Architect** from the picker" in guide
     assert "Do not merely type the literal display name" in guide
     assert "All five hooks are required" in guide
-    assert "aarch64-darwin" in guide
-    assert "shasum -a 256" in guide
 
 
 def test_ci_packages_the_version_from_the_built_manifest() -> None:
@@ -64,17 +63,13 @@ def test_ci_packages_the_version_from_the_built_manifest() -> None:
     assert "dist/codex/ai-software-architect/.codex-plugin/plugin.json" in workflow
     assert "-PluginVersion $manifest.version" in workflow
     assert "package-codex-release.ps1 -PluginVersion 0.1.0" not in workflow
-    assert "macos-aarch64-package:" in workflow
-    assert "--target aarch64-darwin" in workflow
 
 
-@pytest.mark.skipif(
-    shutil.which("powershell.exe") is None and shutil.which("pwsh") is None,
-    reason="PowerShell is required for the Windows release-bundle integration test",
-)
+@pytest.mark.windows
 def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) -> None:
     shell = shutil.which("powershell.exe") or shutil.which("pwsh")
-    assert shell is not None
+    if shell is None:
+        pytest.skip("PowerShell is required for the Windows release-bundle integration test")
 
     plugin = tmp_path / "assembled-plugin"
     manifest = plugin / ".codex-plugin" / "plugin.json"
@@ -171,6 +166,7 @@ def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) ->
     assert f"{bundle_name}/INSTALL.md" in members
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="requires macOS executable permissions")
 def test_macos_release_bundle_is_targeted_and_reproducible(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -209,5 +205,15 @@ def test_macos_release_bundle_is_targeted_and_reproducible(
     ).read_text("utf-8")
     assert "Get-FileHash" not in install_guide
     assert "shasum -a 256" in install_guide
+    assert "v0.1.0" not in install_guide
+    assert "ai-software-architect-v0.2.3+darwin.test-aarch64-darwin.zip" in install_guide
+    # Use the documented extractor; never repair executable permissions after extraction.
+    extracted = tmp_path / "extracted plugin's directory"
+    subprocess.run(["/usr/bin/ditto", "-x", "-k", str(archive), str(extracted)], check=True)  # noqa: S603
+    installed = extracted / bundle_name / "plugins" / "ai-software-architect"
+    assert (installed / target.executable_relative_path).stat().st_mode & 0o100
+    from adapters.codex.validate_plugin import validate
+
+    validate(installed, target=target)
     package_release(plugin, release, target=target)
     assert archive.read_bytes() == first_archive_bytes

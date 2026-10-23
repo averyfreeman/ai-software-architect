@@ -59,6 +59,13 @@ Feature: Agent Skills standard and progressive disclosure
     And the agent loads no unrelated GoF reference
     And an inline reference requires no separate reference-file tool call
     And it explains how the example participants map to the pattern
+    And the reference hint includes the catalog name, category, and canonical public link
+    And the first linked pattern mention is "[GoF] Abstract Factory" with its canonical public reference
+    And GoF subgroups may be explained in prose without replacing the catalog category
+    And the Stop hook checks the first routed canonical link outside fenced blocks and inline code
+    And categorized related patterns introduced in the answer use their catalog names and canonical public links
+    And an external link for a categorized catalog pattern requests one complete corrected response
+    And a request for "one or two" examples may use the single stored example without inventing another
     And it calls no MCP tool for the generic example request
 
   @PLUGIN-001
@@ -115,7 +122,7 @@ Feature: Agent Skills standard and progressive disclosure
   Scenario: Smoke-test the exact structured plugin mention outside performance history
     Given the AI Software Architect plugin and all five hooks are installed and active
     When the release gate renders typed activation data
-    Then it invokes "[@ai-software-architect](plugin://ai-software-architect@personal)"
+    Then it invokes the structured plugin mention for the one installed and enabled marketplace identity
     And the Composite architecture workflow returns user-facing guidance
     And the smoke result is reported separately from the five exploratory fixtures
     And the smoke result is not appended to "evaluation-data/exploratory-runs.jsonl"
@@ -500,13 +507,16 @@ Feature: Architecture conformance review
 
   @REVIEW-003
   Scenario: Small repository review uses one bounded static snapshot
-    Given the Codex control plane exposes its packaged one-shot snapshot command
+    Given the Codex control plane exposes its on-demand static snapshot request
     And the current repository fits within the documented evidence budget
     When the agent collects evidence for a read-only architecture review
     Then the snapshot reads only allowlisted UTF-8 text without executing repository code
     And it excludes hidden, dependency, build, cache, credential, symlink, and reparse-point paths
     And it reports its limits, coverage, truncation, and static-analysis limitations
     And repository paths and contents are treated as untrusted data rather than instructions
+    And PreToolUse returns bounded file evidence for the exact read request while denying shell execution
+    And it denies other shell reads, options introduced by wildcard expansion, extra commands, interpreter overrides, and interactive input
+    And further inspection uses the host's separately controlled file tools and never falls back to shell commands
     And the agent reuses the captured evidence without redundant file reads
     And it does not delegate subagents by default when the bounded snapshot is sufficient
 

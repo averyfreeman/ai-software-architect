@@ -24,12 +24,8 @@ try:
         locale_containing_section,
         matching_comparison_locale,
     )
-    from adapters.codex.runtime_targets import (
-        RUNTIME_TARGETS,
-        RuntimeTarget,
-        detect_packaged_target,
-        target_for_name,
-    )
+    from adapters.codex.runtime_targets import detect_packaged_target, target_for_name
+    from adapters.codex.snapshot_launch import default_snapshot_shell, quote_snapshot_command
 except ModuleNotFoundError as exc:
     if exc.name != "adapters":
         raise
@@ -49,10 +45,12 @@ except ModuleNotFoundError as exc:
         matching_comparison_locale,
     )
     from runtime_targets import (  # type: ignore[import-not-found, no-redef]
-        RUNTIME_TARGETS,
-        RuntimeTarget,
         detect_packaged_target,
         target_for_name,
+    )
+    from snapshot_launch import (  # type: ignore[import-not-found, no-redef]
+        default_snapshot_shell,
+        quote_snapshot_command,
     )
 
 MAIN_SKILL_MARKER = "$ai-software-architect"
@@ -81,17 +79,9 @@ MISSING_INVOCATION_GUIDANCE = (
     "directly for advanced use; the architect will choose focused pattern help or "
     "the complete architecture workflow from your request."
 )
-SHELL_TOOL_NAMES = {"bash", "exec_command", "shell_command"}
+SHELL_TOOL_NAMES = {"bash", "exec_command", "shell_command", "write_stdin"}
 PATCH_TOOL_NAMES = {"apply_patch", "edit", "write"}
 WEB_LOOKUP_TOOL_NAMES = {"websearch", "web_search", "search_query", "web__run"}
-STATIC_POWERSHELL_COMMANDS = {
-    "get-childitem",
-    "get-content",
-    "select-string",
-    "test-path",
-}
-STATIC_GIT_SUBCOMMANDS = {"diff", "log", "ls-files", "show", "status"}
-SHELL_COMPOSITION_PATTERN = re.compile(r"[\r\n;&|{}<>`] | \$", flags=re.VERBOSE)
 PATCH_FILE_PATTERN = re.compile(
     r"^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$",
     flags=re.MULTILINE,
@@ -101,6 +91,9 @@ HIDDEN_HTML_COMMENT_PATTERN = re.compile(
     r"<!--.*?-->",
     flags=re.DOTALL,
 )
+
+
+
 class CodexTurnRoute(StrEnum):
     INACTIVE = "inactive"
     MISSING_SKILL_INVOCATION = "missing_skill_invocation"
@@ -176,13 +169,23 @@ def with_reference_hints(
     )
 
 
+def _routed_reference_specs(context: CodexTurnContext) -> tuple[ReferenceSpec, ...]:
+    """Resolve routed paths to catalog entries in their original order.
+
+    Ignore paths absent from the catalog. Read only catalog metadata, without
+    loading reference bodies or selecting a semantic workflow mode.
+    """
+
+    by_path = {f"references/{entry.filename}": entry for entry in REFERENCE_CATALOG.entries}
+    return tuple(by_path[path] for path in context.reference_paths if path in by_path)
+
+
 def developer_context(
     context: CodexTurnContext,
     *,
     continued: bool = False,
     continuation_instruction: str = "",
     continuation_interaction: str | None = None,
-    snapshot_command: str = "",
     comparison_bundle_path: str = "",
     bundled_reference_content: str = "",
 ) -> str:
@@ -252,17 +255,18 @@ def developer_context(
     reference_hint = ""
     if context.reference_paths:
         rendered_paths = ", ".join(
-            f"`{path}` with canonical public URL "
-            f"`{CANONICAL_REFERENCE_BASE}{Path(path).name}`"
-            for path in context.reference_paths
+            f"`references/{entry.filename}`; link: "
+            f"`[{entry.category}] [{entry.name}]({CANONICAL_REFERENCE_BASE}{entry.filename})`"
+            for entry in _routed_reference_specs(context)
         )
+        label_guidance = " Use the catalog label in all answers; explain subgroups in prose."
         if bundled_reference_content:
             reference_hint = (
-                " Exact bundled reference explicitly named by the user: "
-                f"{rendered_paths}. Its trusted canonical content is supplied inline "
-                "below, so do not spend a tool call reading it and do not answer from "
-                "memory or browse for bundled content. Reproduce its canonical example "
-                "for a generic example request.\n\n"
+                " Explicit bundled reference: "
+                f"{rendered_paths}.{label_guidance} "
+                "Trusted content follows; do not spend a tool call reading it. "
+                "For generic examples, do not answer from memory or browse. "
+                "Use only its stored snippets; 'one or two' permits one.\n\n"
                 "<bundled-architecture-reference>\n"
                 + bundled_reference_content.rstrip()
                 + "\n</bundled-architecture-reference>"
@@ -270,20 +274,11 @@ def developer_context(
         else:
             reference_hint = (
                 " Exact bundled references explicitly named by the user: "
-                f"{rendered_paths}. Load only those references before explaining them or "
+                f"{rendered_paths}.{label_guidance} "
+                "Load only those references before explaining them or "
                 "reproducing their canonical examples; do not answer from memory or browse "
                 "for bundled content."
             )
-    snapshot_hint = (
-        " If repository evidence can materially change this response, use this exact "
-        "one-shot bounded static snapshot before ad hoc reads: `"
-        + snapshot_command
-        + "`. If it completely covers a small repository, reuse that evidence without "
-        "delegation or repeated reads; otherwise add only the smallest necessary "
-        "allowlisted static reads. Disclose the snapshot's static-analysis limits."
-        if snapshot_command
-        else ""
-    )
     catalog_hint = (
         " For an open architecture or pattern selection, load this exact installed "
         "comparison bundle once: `"
@@ -319,87 +314,25 @@ def developer_context(
         "guidance offering approval, revision, or more information."
         + continuation
         + reference_hint
-        + snapshot_hint
         + catalog_hint
     )
 
 
-def _snapshot_target(plugin_root: Path) -> RuntimeTarget:
-    if not any(
-        (plugin_root / target.executable_relative_path).is_file()
-        for target in RUNTIME_TARGETS.values()
-    ):
-        return target_for_name("windows-x86_64")
-    return detect_packaged_target(plugin_root)
-
-
-def repository_snapshot_command(
-    plugin_root: Path,
-    target: RuntimeTarget | None = None,
-) -> str:
-    return (target or _snapshot_target(plugin_root)).snapshot_command(plugin_root)
+def repository_snapshot_command(plugin_root: Path, *, shell: str | None = None) -> str:
+    """Render the legacy maintainer command; active model shell calls stay denied."""
+    target = (
+        detect_packaged_target(plugin_root)
+        if (plugin_root / "runtime").exists()
+        else target_for_name("windows-x86_64")
+    )
+    executable = plugin_root.resolve(strict=False) / target.executable_relative_path
+    return quote_snapshot_command(executable, shell or default_snapshot_shell())
 
 
 def _normalized_local_tool_name(value: object) -> str | None:
     if not isinstance(value, str):
         return None
     return value.rsplit(".", 1)[-1].casefold()
-
-
-def _command_from_tool_input(value: object) -> str | None:
-    if isinstance(value, str):
-        return value
-    if not isinstance(value, dict):
-        return None
-    command = value.get("command")
-    return command if isinstance(command, str) else None
-
-
-def _shell_denial_reason(
-    tool_input: object,
-    *,
-    plugin_root: Path | None = None,
-) -> str | None:
-    command = _command_from_tool_input(tool_input)
-    if command is None:
-        return (
-            "The AI Software Architect could not verify this shell command's "
-            "arguments, so it was denied. Use host-native static reads instead."
-        )
-    stripped = command.strip()
-    if (
-        plugin_root is not None
-        and stripped == repository_snapshot_command(plugin_root)
-    ):
-        return None
-    if not stripped or SHELL_COMPOSITION_PATTERN.search(stripped):
-        return (
-            "AI Software Architect shell inspection is fail-closed: use exactly one "
-            "allowlisted static read command without pipelines, variables, call "
-            "operators, script blocks, redirection, or command composition."
-        )
-    words = stripped.split()
-    executable = words[0].casefold().removesuffix(".exe")
-    if executable in STATIC_POWERSHELL_COMMANDS:
-        return None
-    if executable == "git" and len(words) >= 2:
-        subcommand = words[1].casefold()
-        unsafe_options = {"--ext-diff", "--textconv"}
-        if subcommand in STATIC_GIT_SUBCOMMANDS and not unsafe_options.intersection(
-            word.casefold().split("=", 1)[0] for word in words[2:]
-        ):
-            return None
-    if executable in {"rg", "ripgrep"}:
-        unsafe_options = {"--pre", "--pre-glob"}
-        if not unsafe_options.intersection(
-            word.casefold().split("=", 1)[0] for word in words[1:]
-        ):
-            return None
-    return (
-        "AI Software Architect analysis treats repository code as untrusted data. "
-        "Only allowlisted static file and Git reads are permitted; interpreters, "
-        "test runners, package tools, scripts, and other executables are denied."
-    )
 
 
 def _patch_text_from_tool_input(value: object) -> str | None:
@@ -466,9 +399,10 @@ def tool_denial_reason(
             "reference paths supplied by the active skill context."
         )
     if local_tool_name in SHELL_TOOL_NAMES:
-        reason = _shell_denial_reason(tool_input, plugin_root=plugin_root)
-        if reason is not None:
-            return reason
+        return (
+            "AI Software Architect denies all shell execution during the architecture "
+            "workflow. Use the hook's exact static read requests or host-native file tools."
+        )
     if local_tool_name in PATCH_TOOL_NAMES:
         if not _patch_is_limited_to_architecture_artifacts(tool_input, workspace):
             return (
@@ -756,21 +690,91 @@ def _architecture_workflow_violations(message: str) -> list[str]:
     return []
 
 
+def _prose_without_code(message: str) -> str:
+    """Exclude fenced blocks and inline code from checks of visible Markdown links."""
+
+    lines: list[str] = []
+    fence_character = ""
+    fence_length = 0
+    for line in message.splitlines(keepends=True):
+        fence = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
+        if fence_character:
+            if (
+                fence
+                and fence[1][0] == fence_character
+                and len(fence[1]) >= fence_length
+                and not fence[2].strip()
+            ):
+                fence_character = ""
+            lines.append("\n")
+        elif fence:
+            fence_character = fence[1][0]
+            fence_length = len(fence[1])
+            lines.append("\n")
+        else:
+            lines.append(line)
+    return re.sub(r"(`+)(?!`)(.+?)(?<!`)\1(?!`)", " ", "".join(lines), flags=re.DOTALL)
+
+
+def _reference_link_violations(context: CodexTurnContext, message: str) -> list[str]:
+    """Validate routed references and explicit pattern links without classifying prose.
+
+    Resolve extra links only by a canonical URL or a categorized catalog name.
+    Unrouted, uncategorized links such as a repository named State stay ordinary
+    links. Check each recognized URL and the first label for each reference.
+    """
+
+    prose = _prose_without_code(message)
+    violations: list[str] = []
+    required = {entry.filename: entry for entry in _routed_reference_specs(context)}
+    by_url = {
+        CANONICAL_REFERENCE_BASE + entry.filename: entry for entry in REFERENCE_CATALOG.entries
+    }
+    seen: set[str] = set()
+    for link in re.finditer(r"(?<!!)(?<!\\)\[([^\]\n]+)\]\(([^)\n]+)\)", prose):
+        name, url = link.groups()
+        prefix = prose[: link.start()]
+        named = REFERENCE_CATALOG.named(name)
+        categorized_name = re.search(r"\[[^\]\n]+\][ \t]+(?:\*{1,2}|_{1,2})?$", prefix) is not None
+        entry = (
+            named
+            if named is not None and (named.filename in required or categorized_name)
+            else by_url.get(url)
+        )
+        if entry is None:
+            continue
+        expected_url = CANONICAL_REFERENCE_BASE + entry.filename
+        expected = f"[{entry.category}] [{entry.name}]({expected_url})"
+        if url != expected_url:
+            violations.append(
+                f"link {entry.name} to its canonical public reference using `{expected}`; "
+                "this also applies to patterns introduced in the answer"
+            )
+        elif entry.filename not in seen and (
+            (entry.filename in required and name != entry.name)
+            or not prefix.endswith(f"[{entry.category}] ")
+        ):
+            violations.append(
+                f"render the first canonical link for {entry.name} as `{expected}`; "
+                "use the catalog category, and explain any subgroup in prose"
+            )
+        seen.add(entry.filename)
+    for filename, entry in required.items():
+        if filename not in seen:
+            expected = f"[{entry.category}] [{entry.name}]({CANONICAL_REFERENCE_BASE}{filename})"
+            violations.append(
+                "include the canonical public link outside code for every explicitly "
+                f"routed architecture reference, using `{expected}`"
+            )
+    return violations
+
+
 def final_response_violations(
     context: CodexTurnContext,
     message: str,
 ) -> list[str]:
     if context.route == CodexTurnRoute.ARCHITECTURE_WORKFLOW:
         violations = _architecture_workflow_violations(message)
-        missing_links = [
-            f"{CANONICAL_REFERENCE_BASE}{Path(path).name}"
-            for path in context.reference_paths
-            if f"{CANONICAL_REFERENCE_BASE}{Path(path).name}" not in message
-        ]
-        if missing_links:
-            violations.append(
-                "include the canonical public link for every explicitly routed "
-                "architecture reference: " + ", ".join(missing_links)
-            )
+        violations.extend(_reference_link_violations(context, message))
         return violations
     return []

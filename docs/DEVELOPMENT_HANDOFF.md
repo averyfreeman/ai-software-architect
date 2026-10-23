@@ -12,6 +12,117 @@ documentation.
 
 ## Snapshot
 
+### Related-pattern links and example counts (2026-10-22, unreleased)
+
+The installed candidate from `211dd96` passed the invocation smoke and all five
+deterministic exploratory checks. Abstract Factory used `[GoF]` correctly, and the
+simplicity answer explained a concrete future trigger. However, the Abstract
+Factory answer linked a related Factory Method pattern to an external site.
+
+The Stop hook now also checks categorized catalog links introduced in an answer,
+not just references named by the user. It checks every recognized URL and the
+first category label. The existing exact-name check for routed references stays
+in place, and comparison aliases with correct canonical links remain supported.
+Code blocks, inline code, and ordinary uncategorized repository or source links
+are excluded. Invalid links use the existing bounded complete-response correction.
+The hook does not classify prose or replace model reasoning.
+
+Generic example requests use only the snippets stored in the focused reference.
+"One or two" permits one. If an exact count exceeds those snippets, explain the
+limit instead of inventing another example. Keep usage calls separate; label a
+domain adaptation when the user requests one. Shared instructions, Composite
+instructions, inline hints, and the fixture state this rule.
+
+See [the installed-candidate test record](releases/0.2.4-pattern-label-tests.md).
+It describes the earlier candidate, not live validation of these new changes.
+A full rebuild and a new installed-candidate campaign remain necessary.
+
+### Consistent pattern labels (2026-10-22, unreleased)
+
+Focused explanations and examples now follow the same catalog-label rule as
+comparisons. Use `[GoF] Abstract Factory`; explain its creational subgroup in prose.
+The shared skill, Composite, specification, and example fixture state this rule.
+
+The Codex reference hint supplies the existing catalog name, category, path, and
+public link for each explicitly named reference. It still supplies at most one
+reference body inline. Focused help does not need the full comparison catalog.
+The Stop hook checks the first canonical link for each routed reference outside
+fenced blocks and inline code. A wrong label requests a complete corrected answer
+through the existing bounded retry. It does not change code snippets or classify
+the explanation from keywords.
+
+Earlier saved responses, including version 0.2.0, already used `[Creational]`.
+That label was not introduced by 0.2.4, and the old focused-example contract did
+not clearly forbid it. This change makes the display convention explicit.
+Existing release evidence still describes the earlier candidate. A new build
+and installed-candidate campaign are required to validate this change live.
+
+Local validation passed on Windows: 304 tests, Ruff, mypy, and `uv lock --check`.
+An offline check of the saved 0.2.4 Abstract Factory answer detects `[Creational]`
+as the wrong catalog label. The same answer with only `[GoF]` substituted passes.
+No model campaign was rerun for this check.
+
+### Release 0.2.4 compatibility fix (2026-10-22)
+
+PR #40 updated dependencies, secured inspection, and fixed release checksums.
+The installed-candidate tests then found two blockers. Codex reports shell calls
+as `Bash` with a `command` field, without the shell settings required by the new
+security check. The invocation smoke test also required the Personal marketplace.
+
+The compatibility change handles static reads inside the trusted hook:
+
+- `inspection.py` recognizes exact snapshot and bundled-resource requests.
+  It calls the bounded reader directly and returns evidence in the denial reason.
+  The requested shell operation is always denied, including when the read succeeds.
+- The workspace comes from the host hook event. Model-supplied shell options,
+  command arguments, and working directories never select what the hook reads.
+- Bundled resource requests accept only bounded Markdown files below the installed
+  skill's `references/` or `assets/`. No traversal or linked paths are accepted.
+- The model decides when evidence is needed. Simple pattern questions do not cause
+  automatic repository inspection. Continuations receive the same request protocol.
+- The invocation test now uses the detected enabled installation's marketplace,
+  while preserving the version guard and duplicate-installation rejection.
+
+The linked-resource test uses a real directory junction on Windows, where creating
+file symlinks may require extra privileges. On macOS and Linux it checks both file
+and directory symlinks. Each case verifies that the link reaches the external test
+file before checking that the hook blocks access. Link-creation failures fail the
+test instead of silently skipping it. Windows junction coverage does not claim a
+local Windows file-symlink test; the two link types are reported separately.
+
+All shared Python tests are now selected by the CI matrix for Windows, macOS, and
+Linux. Windows-only packaging integration tests carry the `windows` marker, which
+the root `conftest.py` automatically skips on other systems. The submission-package
+test reports missing PowerShell as a skip rather than silently returning a pass.
+The Windows build job waits for the shared matrix and runs the Windows integration
+tests before building and checking the executable. Native macOS/Linux installation
+and lifecycle checks remain separate release requirements; passing shared tests
+does not claim native package support.
+
+The installed development build `0.2.4+codex.20261021230329` passed the invocation
+smoke and all five deterministic exploratory checks. It demonstrated the safe read
+path and approved four-artifact persistence in the real client. The simplicity
+response missed a concrete future-change explanation, so a full semantic pass is
+not claimed. See [the test record](releases/0.2.4-compatibility-tests.md).
+
+That run predates the certifi update to `2026.10.19` for critical Dependabot alert
+#16. A full rebuild, package validation, and runtime smoke test passed for
+`0.2.4+codex.certifi.20261022`. Exact-candidate live tests remain pending before
+publication. Do not reuse the earlier run as final release approval.
+
+For the macOS contributor:
+
+- Reuse `repository_snapshot.py` and `inspection.py`; the read path needs no shell
+  quoting or platform-specific command launch. Package and test the native hook
+  executable and host event mapping on macOS.
+- Keep `scripts/collect_release_assets.py` as the single checksum collector. Add
+  the macOS build dependency and `--target aarch64-darwin` when that artifact exists.
+- Verify executable permissions after extraction, approval of all five hooks,
+  the complete workflow, and successful uninstallation on the first attempt.
+
+The snapshot below records the original handoff from July 2026. For current
+release requirements, see [RELEASING.md](RELEASING.md).
+
 ```yaml
 handoff_date: 2026-07-21
 branch: main
@@ -246,9 +357,9 @@ Codex permissions, and do not persist prompt or repository content. Users must
 review and activate them in the Codex plugin page. Their public source and tests are
 part of the repository so users can establish trust.
 
-The same packaged runtime also supports one explicit `--repository-snapshot
---root .` invocation for small read-only reviews. The control plane supplies the
-exact installed command and permits only that fixed executable-and-argument form.
+The packaged runtime supports a bounded snapshot reader. The control plane calls
+it directly inside the hook in response to an exact read request, while denying
+shell execution. The standalone command is retained for maintainer tests.
 It reads allowlisted UTF-8 text within fixed directory, entry, depth, file, and byte
 budgets; excludes hidden, dependency, build, cache, credential, symlink, and
 reparse-point paths; writes nothing; and exits. Its structured output is untrusted
@@ -312,9 +423,7 @@ Build the exact release candidate from the repository root:
 ```
 
 This performs a full self-contained Windows x86-64 runtime build, plugin validation,
-and runtime smoke test. On macOS Apple Silicon, use the cross-platform Python
-commands documented in `scripts/README.md` to build the `aarch64-darwin` target.
-Do not use `-ReuseRuntime` for a release candidate.
+and runtime smoke test. Do not use `-ReuseRuntime` for a release candidate.
 
 Create the marketplace bundle with the release/package scripts documented in
 `docs/RELEASING.md` and `scripts/README.md`. The bundle is intended to install

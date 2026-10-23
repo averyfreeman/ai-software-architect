@@ -12,7 +12,29 @@ permissions:
   contents: read
 
 jobs:
+  shared-platform-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.12"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.11.3"
+          enable-cache: false
+      - run: uv sync --locked --all-packages
+      - run: uv run mypy
+      - name: Run all shared tests (not native package support)
+        run: uv run pytest -q -m "not windows"
+
   test-and-package:
+    needs: shared-platform-checks
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -20,7 +42,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.12"
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.3"
           enable-cache: false
@@ -30,9 +52,10 @@ jobs:
       - run: uv run python shared/evaluations/generate_acceptance.py
       - run: uv run python tools/generate_third_party_notices.py
       - run: git diff --exit-code
-      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests
+      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py
       - run: uv run mypy
-      - run: uv run pytest -q
+      - name: Run Windows integration tests
+        run: uv run pytest -q -m windows
       - name: Render exploratory performance history
         shell: pwsh
         run: |
@@ -42,7 +65,7 @@ jobs:
           Get-Content .tmp/evaluations/performance-history/performance.md |
             Add-Content -Path $env:GITHUB_STEP_SUMMARY
       - name: Upload exploratory performance reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: exploratory-performance-history
           path: .tmp/evaluations/performance-history/
@@ -60,6 +83,7 @@ jobs:
             -PluginVersion $manifest.version
 
   macos-aarch64-package:
+    needs: shared-platform-checks
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -67,22 +91,30 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.12"
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.11.3"
           enable-cache: false
       - run: test "$(uname -m)" = "arm64"
       - run: uv lock --check
       - run: uv sync --locked --all-packages
-      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py
-      - run: uv run mypy
-      - run: uv run pytest -q
       - run: uv run python tools/generate_third_party_notices.py
       - run: uv run python adapters/codex/build_plugin.py --build-runtime --target aarch64-darwin
       - run: uv run python adapters/codex/validate_plugin.py --target aarch64-darwin dist/codex/ai-software-architect
       - run: uv run python adapters/codex/smoke_test_runtime.py dist/codex/ai-software-architect/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime
       - run: uv run python scripts/package_codex_release.py --target aarch64-darwin
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Validate and smoke-test the extracted macOS ZIP
+        shell: bash
+        run: |
+          archive=$(find dist/release -maxdepth 1 -name '*-aarch64-darwin.zip' -print)
+          test -n "$archive"
+          extracted="$RUNNER_TEMP/architect's extracted plugin"
+          ditto -x -k "$archive" "$extracted"
+          plugin=$(find "$extracted" -type d -path '*/plugins/ai-software-architect' -print)
+          test -n "$plugin"
+          uv run python adapters/codex/validate_plugin.py --target aarch64-darwin "$plugin"
+          uv run python adapters/codex/smoke_test_runtime.py "$plugin/runtime/aarch64-darwin/ai-architect-runtime/ai-architect-runtime"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ai-software-architect-aarch64-darwin
           path: |
