@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -15,6 +16,7 @@ import pytest
 
 from adapters.codex import build_plugin
 from adapters.codex.runtime_targets import target_for_name
+from scripts.combine_release_checksums import combine_checksums
 from scripts.package_codex_release import package_release
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +24,7 @@ MARKETPLACE_TEMPLATE = ROOT / "adapters" / "codex" / "templates" / "marketplace.
 INSTALL_GUIDE = ROOT / "docs" / "INSTALL_CODEX_PLUGIN.md"
 PACKAGE_SCRIPT = ROOT / "scripts" / "package-codex-release.ps1"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "release.yml"
 
 
 def test_release_marketplace_points_to_bundled_plugin() -> None:
@@ -66,6 +69,17 @@ def test_ci_packages_the_version_from_the_built_manifest() -> None:
     assert "package-codex-release.ps1 -PluginVersion 0.1.0" not in workflow
     assert "macos-aarch64-package:" in workflow
     assert "--target aarch64-darwin" in workflow
+
+
+def test_release_workflow_combines_both_target_archives_before_uploading() -> None:
+    workflow = RELEASE_WORKFLOW.read_text("utf-8")
+
+    assert "combine-release-artifacts:" in workflow
+    assert "needs: [build, build-macos-aarch64]" in workflow
+    assert "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093" in workflow
+    assert "scripts/combine_release_checksums.py" in workflow
+    assert "dist/release/final/SHA256SUMS.txt" in workflow
+    assert "ai-software-architect-${{ github.ref_name }}-release" in workflow
 
 
 @pytest.mark.skipif(
@@ -171,6 +185,7 @@ def test_release_script_builds_installable_marketplace_bundle(tmp_path: Path) ->
     assert f"{bundle_name}/INSTALL.md" in members
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="requires macOS executable permissions")
 def test_macos_release_bundle_is_targeted_and_reproducible(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -211,3 +226,21 @@ def test_macos_release_bundle_is_targeted_and_reproducible(
     assert "shasum -a 256" in install_guide
     package_release(plugin, release, target=target)
     assert archive.read_bytes() == first_archive_bytes
+
+
+def test_combined_release_checksums_lists_all_archives_in_sorted_order(
+    tmp_path: Path,
+) -> None:
+    windows = tmp_path / "ai-software-architect-v0.2.3-windows-x86_64.zip"
+    macos = tmp_path / "ai-software-architect-v0.2.3-aarch64-darwin.zip"
+    windows.write_bytes(b"windows archive")
+    macos.write_bytes(b"macOS archive")
+    output = tmp_path / "release" / "SHA256SUMS.txt"
+
+    combine_checksums([windows, macos], output)
+
+    expected = [
+        f"{hashlib.sha256(macos.read_bytes()).hexdigest()}  {macos.name}",
+        f"{hashlib.sha256(windows.read_bytes()).hexdigest()}  {windows.name}",
+    ]
+    assert output.read_text("ascii").splitlines() == expected

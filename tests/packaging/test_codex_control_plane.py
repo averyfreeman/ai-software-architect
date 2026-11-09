@@ -1230,6 +1230,19 @@ def test_pending_architect_continuation_expires(tmp_path: Path) -> None:
     assert not continuation.exists()
 
 
+def test_windows_snapshot_command_uses_powershell_runtime_path(tmp_path: Path) -> None:
+    plugin_root = tmp_path / "installed plugin"
+    command = repository_snapshot_command(
+        plugin_root, target=target_for_name("windows-x86_64")
+    )
+
+    assert command.startswith('& "')
+    assert "runtime" in command
+    assert "ai-architect-runtime.exe" in command
+    assert "--repository-snapshot --root ." in command
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="requires macOS path semantics")
 def test_macos_snapshot_command_uses_posix_runtime_path(tmp_path: Path) -> None:
     plugin_root = tmp_path / "installed plugin"
     command = repository_snapshot_command(

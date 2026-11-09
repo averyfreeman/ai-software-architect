@@ -30,7 +30,7 @@ jobs:
       - run: uv run python shared/evaluations/generate_acceptance.py
       - run: uv run python tools/generate_third_party_notices.py
       - run: git diff --exit-code
-      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests
+      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py scripts/combine_release_checksums.py
       - run: uv run mypy
       - run: uv run pytest -q
       - name: Render exploratory performance history
@@ -74,7 +74,7 @@ jobs:
       - run: test "$(uname -m)" = "arm64"
       - run: uv lock --check
       - run: uv sync --locked --all-packages
-      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py
+      - run: uv run ruff check shared/schemas tools/python-mcp adapters tests scripts/package_codex_release.py scripts/combine_release_checksums.py
       - run: uv run mypy
       - run: uv run pytest -q
       - run: uv run python tools/generate_third_party_notices.py

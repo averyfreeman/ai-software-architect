@@ -135,18 +135,22 @@ uv run python scripts/package_codex_release.py \
 The script checks that the assembled manifest version matches the requested
 version, copies the plugin into a release-only marketplace layout, adds the
 dependency-free installation guide, creates the target-specific ZIP, and writes
-its SHA-256 checksum. The Python entry point validates the target-specific plugin
-and writes deterministic archive metadata. Neither entry point rebuilds the runtime
-during packaging.
+its target-local SHA-256 checksum. The Python entry point validates the
+target-specific plugin and writes deterministic archive metadata. Neither entry
+point rebuilds the runtime during packaging.
 
 Generated output is written under `dist/release/` and remains ignored by Git.
-Publish the ZIP and `SHA256SUMS.txt` as assets of the matching GitHub Release.
+The release workflow combines the Windows and macOS ZIPs into one sorted
+`SHA256SUMS.txt`; publish that combined manifest with both ZIPs. The individual
+target-local checksum is useful for local package inspection but is not the
+published release manifest.
 The versioned source inputs are:
 
 - `adapters/codex/templates/marketplace.json`;
-- `docs/INSTALL_CODEX_PLUGIN.md`; and
-- `scripts/package-codex-release.ps1`; and
-- `scripts/package_codex_release.py`.
+- `docs/INSTALL_CODEX_PLUGIN.md`;
+- `scripts/package-codex-release.ps1`;
+- `scripts/package_codex_release.py`; and
+- `scripts/combine_release_checksums.py`.
 
 ## Package an OpenAI Plugin-Directory Submission
 

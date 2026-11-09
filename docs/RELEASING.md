@@ -66,9 +66,11 @@ It currently:
 3. builds the self-contained Windows x86-64 and macOS Apple Silicon plugins with
    that exact version;
 4. validates and smoke-tests both assembled packages;
-5. creates a target-specific installable repository marketplace ZIP and SHA-256
-   checksum for each package; and
-6. uploads both artifacts as GitHub Actions artifacts.
+5. creates a target-specific installable repository marketplace ZIP and local
+   SHA-256 checksum for each package;
+6. combines both ZIPs into one sorted `SHA256SUMS.txt` containing one line per
+   download; and
+7. uploads the platform artifacts and the final combined release artifact.
 
 It currently does **not**:
 
@@ -79,8 +81,9 @@ It currently does **not**:
 - attach the ZIP and checksum to a GitHub Release.
 
 The uploaded artifact is a release candidate until the remaining manual gates
-pass and a maintainer attaches the inner release ZIP and checksum to a reviewed
-GitHub Release. The publication procedure is documented below.
+pass and a maintainer attaches the inner release ZIPs and combined checksum
+manifest to a reviewed GitHub Release. The publication procedure is documented
+below.
 
 ## Version Policy
 
@@ -366,9 +369,11 @@ uv run python scripts/package_codex_release.py --target aarch64-darwin \
 The script verifies that the candidate tree is clean, checks and synchronizes the
 lockfile, regenerates and compares derived artifacts, runs linting, type checks,
 and tests, performs a full build, package validation, and runtime smoke test,
-then creates the dependency-free marketplace ZIP and checksum. All checks
-must succeed. Gates B-E remain explicit manual procedures because they require
-human inspection, the Codex model and Desktop UI, or a clean machine.
+then creates the dependency-free marketplace ZIP and target-local checksum.
+The release workflow combines target archives into one published checksum
+manifest. All checks must succeed. Gates B-E remain explicit manual procedures
+because they require human inspection, the Codex model and Desktop UI, or a
+clean machine.
 
 ### Gate B: Package Inspection
 
@@ -538,21 +543,21 @@ git push origin v<version>
 The tag triggers [`.github/workflows/release.yml`](../.github/workflows/release.yml).
 Open the **Release artifact** run for `v<version>` on the
 [GitHub Actions page](https://github.com/leomuf/ai-software-architect/actions)
-and confirm that all steps pass. The workflow uploads a release candidate
-containing the installable marketplace ZIP and `SHA256SUMS.txt`; it does not
-create a GitHub Release.
+and confirm that all steps pass. The final workflow artifact contains both
+installable marketplace ZIPs and one `SHA256SUMS.txt` listing the checksum for
+each download; it does not create a GitHub Release.
 
 Download and inspect the artifact. GitHub wraps downloaded Actions artifacts in
-an outer ZIP, so attach the inner marketplace bundle and its checksum—not that
-outer ZIP—to the GitHub Release. The bundle must include `INSTALL.md` and
-`VERSION.txt` and be suitable for clean-machine installation.
+an outer ZIP, so attach the inner marketplace bundles and the combined checksum
+manifest—not that outer ZIP—to the GitHub Release. Each bundle must include
+`INSTALL.md` and `VERSION.txt` and be suitable for clean-machine installation.
 
 Create a draft at [GitHub Releases](https://github.com/leomuf/ai-software-architect/releases/new):
 
 1. select and verify the `v<version>` tag and reviewed commit SHA;
 2. use the title `AI Software Architect v<version>`;
-3. attach the exact marketplace ZIP, `SHA256SUMS.txt`, and sanitized release
-   evidence when available;
+3. attach both exact marketplace ZIPs, the combined `SHA256SUMS.txt`, and
+   sanitized release evidence when available;
 4. add release notes that accurately describe changes since the previous release;
 5. verify all assets and checksums, then publish the draft.
 

@@ -41,9 +41,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ai-software-architect-${{ github.ref_name }}-windows-x86_64
-          path: |
-            dist/release/*.zip
-            dist/release/SHA256SUMS.txt
+          path: dist/release/*.zip
           if-no-files-found: error
 
   build-macos-aarch64:
@@ -68,7 +66,38 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ai-software-architect-${{ github.ref_name }}-aarch64-darwin
-          path: |
-            dist/release/*-aarch64-darwin.zip
-            dist/release/SHA256SUMS.txt
+          path: dist/release/*-aarch64-darwin.zip
+          if-no-files-found: error
+
+  combine-release-artifacts:
+    needs: [build, build-macos-aarch64]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.12"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ai-software-architect-${{ github.ref_name }}-windows-x86_64
+          path: dist/release/windows
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ai-software-architect-${{ github.ref_name }}-aarch64-darwin
+          path: dist/release/macos
+      - name: Create combined checksum manifest
+        shell: bash
+        run: |
+          mkdir -p dist/release/final
+          python scripts/combine_release_checksums.py \
+            --output dist/release/final/SHA256SUMS.txt \
+            dist/release/windows/*.zip \
+            dist/release/macos/*.zip
+          cp dist/release/windows/*.zip dist/release/final/
+          cp dist/release/macos/*.zip dist/release/final/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ai-software-architect-${{ github.ref_name }}-release
+          path: dist/release/final/
           if-no-files-found: error

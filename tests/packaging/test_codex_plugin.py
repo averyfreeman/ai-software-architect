@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
+import pytest
 import yaml
 from pytest import MonkeyPatch, raises
 
@@ -188,6 +190,7 @@ def test_codex_plugin_is_reproducible_and_complete(
         validate_plugin.validate(versioned)
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="requires macOS executable permissions")
 def test_codex_plugin_assembles_native_macos_runtime(
     tmp_path: Path, monkeypatch: MonkeyPatch
 ) -> None:

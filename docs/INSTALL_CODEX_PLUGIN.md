@@ -20,8 +20,9 @@ Desktop is running.
 
 ## Verify the Download
 
-Download the release ZIP and `SHA256SUMS.txt` from the same GitHub Release. In
-the download directory, use the command for your platform:
+Download the release ZIP for your platform and the combined `SHA256SUMS.txt`
+from the same GitHub Release. The checksum manifest contains one line for each
+supported platform. In the download directory, use the command for your platform:
 
 On Windows:
 
